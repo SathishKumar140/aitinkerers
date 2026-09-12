@@ -87,14 +87,15 @@ describe("consensus_card", () => {
 describe("itinerary_card", () => {
   it("renders scheduled stops with times and locations", async () => {
     const stops = [
-      { time: "18:30", activity: "Meet at Tanjong Pagar MRT", location: "Exit A" },
-      { time: "19:00", activity: "Dinner at Genesis Bistro", location: "Chinatown" },
-      { time: "20:30", activity: "Drinks & dessert at Afterglow", location: "Keong Saik Rd" },
+      { day: "Oct 15", time: "18:30", activity: "Meet at Tanjong Pagar MRT", location: "Exit A" },
+      { day: "Oct 15", time: "19:00", activity: "Dinner at Genesis Bistro", location: "Chinatown" },
+      { day: "Oct 15", time: "20:30", activity: "Drinks & dessert at Afterglow", location: "Keong Saik Rd" },
     ];
     const out = await render(ItineraryCard.render({ title: "Friday Team Night", stops }, ctx));
     assert.ok(out.includes("Friday Team Night"));
     assert.ok(out.includes("Genesis Bistro"));
-    assert.ok(out.includes("3 stop(s) scheduled"));
+    assert.ok(out.includes("Oct 15"));
+    assert.ok(out.includes("3 stops scheduled"));
   });
 });
 

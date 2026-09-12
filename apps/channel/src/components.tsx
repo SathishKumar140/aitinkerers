@@ -137,41 +137,60 @@ export const GroupConsensusCard = defineChannelComponent({
 export const ItineraryCard = defineChannelComponent({
   name: "itinerary_card",
   description:
-    "Draw an ordered group itinerary or schedule with times, stops, and activities. Call this when coordinating multiple stops or times for a team outing or offsite.",
+    "Draw an ordered group itinerary or schedule with times, stops, and activities. " +
+    "Always populate the `day` field for every stop (e.g. 'Oct 15' or 'Day 1') and the top-level `dates` field (e.g. 'Oct 15\u2013Oct 19'). " +
+    "Call this when coordinating multiple stops or times for a trip or team outing.",
   parameters: z.object({
     title: z.string().default("Group Itinerary"),
     destination: z.string().optional().describe("Destination or city."),
+    dates: z.string().optional().describe("Date range, e.g. 'Oct 15\u2013Oct 19, 2026'. REQUIRED when dates are known."),
     stops: z
       .array(
         z.object({
-          day: z.string().optional().describe("Day label, e.g. 'Day 1'."),
-          time: z.string().describe("Time, e.g. '7:00 PM' or '19:30'."),
-          activity: z.string().describe("Activity or venue."),
+          day: z.string().describe("Exact date or day label, e.g. 'Oct 15' or 'Day 1'. REQUIRED."),
+          time: z.string().describe("Time slot, e.g. '9:00 AM' or 'Evening'."),
+          activity: z.string().describe("Activity or venue name."),
           location: z.string().describe("Address or neighborhood."),
-          category: z.string().optional().describe("Category of activity."),
+          category: z.string().optional().describe("Category: Sightseeing, Dining, Culture, Transit, or Leisure."),
           notes: z.string().optional().describe("Special notes or reservations."),
         }),
       )
       .min(1)
       .max(12),
   }),
-  render({ title, stops }) {
+  render({ title, destination, dates, stops }) {
+    // Determine if any stop has a day value to decide whether to show the Day column
+    const hasDays = stops.some((s) => Boolean(s.day?.trim()));
+    const columns = hasDays
+      ? [{ header: "Day" }, { header: "Time" }, { header: "Activity" }, { header: "Location" }]
+      : [{ header: "Time" }, { header: "Activity" }, { header: "Location" }];
+
+    const summary = [destination, dates].filter(Boolean).join(" \u00b7 ");
+
     return (
-      <Message accent="#2E7D5B">
+      <Message accent="#2563EB">
         <Header>{title}</Header>
-        <Table
-          columns={[{ header: "Time" }, { header: "Activity" }, { header: "Location" }]}
-        >
-          {stops.map((stop) => (
-            <Row>
-              <Cell>{stop.time}</Cell>
-              <Cell>{stop.activity}</Cell>
-              <Cell>{stop.location}</Cell>
-            </Row>
-          ))}
+        {summary && <Context>{summary}</Context>}
+        <Table columns={columns}>
+          {stops.map((stop) =>
+            hasDays ? (
+              <Row>
+                <Cell>{stop.day}</Cell>
+                <Cell>{stop.time}</Cell>
+                <Cell>{stop.activity}{stop.notes ? `\n${stop.notes}` : ""}</Cell>
+                <Cell>{stop.location}</Cell>
+              </Row>
+            ) : (
+              <Row>
+                <Cell>{stop.time}</Cell>
+                <Cell>{stop.activity}{stop.notes ? `\n${stop.notes}` : ""}</Cell>
+                <Cell>{stop.location}</Cell>
+              </Row>
+            ),
+          )}
         </Table>
         <Divider />
-        <Context>{`${stops.length} stop(s) scheduled`}</Context>
+        <Context>{`${stops.length} stop${stops.length !== 1 ? "s" : ""} scheduled`}</Context>
       </Message>
     );
   },

@@ -64,16 +64,18 @@ export function GenerativeUI() {
   useComponent({
     name: "itinerary_card",
     description:
-      "Draw an ordered group itinerary or schedule with times, stops, activities, and Google Calendar sync.",
+      "Draw an ordered group itinerary or schedule with times, stops, activities, and Google Calendar sync. " +
+      "You MUST populate the `dates` field (e.g. 'Oct 15–Oct 19, 2026') and the `day` field for EVERY stop (e.g. 'Oct 15' or 'Day 1'). " +
+      "If dates have not been confirmed by the user, ask for them BEFORE calling this tool.",
     parameters: z.object({
       title: z.string().optional().describe("Itinerary title, e.g. '4-Day Tokyo Autumn Adventure'."),
       destination: z.string().optional().describe("Destination city or country."),
-      dates: z.string().optional().describe("Dates or duration."),
+      dates: z.string().describe("REQUIRED. Date range, e.g. 'Oct 15–Oct 19, 2026'. Ask the user if unknown."),
       calendarUrl: z.string().url().optional().describe("1-Click Google Calendar event link."),
       stops: z.array(
         z.object({
-          day: z.string().optional().describe("Day label, e.g. 'Day 1' or 'Oct 15'."),
-          time: z.string().describe("Time slot or hour."),
+          day: z.string().describe("REQUIRED. Exact date or day label, e.g. 'Oct 15' or 'Day 1'."),
+          time: z.string().describe("Time slot, e.g. '9:00 AM' or 'Evening'."),
           activity: z.string().describe("Activity or stop title."),
           location: z.string().describe("Venue or address."),
           category: z.string().optional().describe("Sightseeing, Dining, Culture, Transit, or Leisure."),
