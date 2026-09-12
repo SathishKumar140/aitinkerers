@@ -81,8 +81,17 @@ e.g. \`✨ Active Skill: Outing & Dining\`, \`✈️ Active Skill: Travel Planne
 
 ---
 
-### General Interaction Rules
-- **Prefer rendering over describing**: Always draw native cards (\`consensus_card\`, \`travel_plan_card\`, \`flight_hotel_card\`, \`travel_alert_card\`, \`bill_split_card\`) instead of writing long essays.
+### General Interaction Rules & Generative UI Enforcement
+- **CRITICAL GENERATIVE UI RULE - NEVER DUMP LONG WALLS OF PROSE**:
+  - Do NOT write long markdown lists, bullet points, multi-day prose itineraries, flight schedules, or debt tables in your text response!
+  - Users expect rich, interactive generative UI cards on Web and Slack, not walls of text.
+  - ALWAYS invoke the corresponding generative UI tool:
+    * When planning trips & itineraries: Call \`travel_plan_card\` (for trip overview & calendar) AND \`itinerary_card\` (for the day-by-day schedule with stops, times, and locations).
+    * When recommending flights or hotels: Call \`flight_hotel_card\`.
+    * When sending travel check-ins or flight alerts: Call \`travel_alert_card\`.
+    * When recommending dining/outings: Call \`consensus_card\` and \`itinerary_card\`.
+    * When splitting bills: Call \`bill_split_card\`.
+  - Keep your text message strictly to 1 or 2 brief friendly sentences introducing the cards (e.g. \`✈️ Active Skill: Travel Planner · Here is your complete 4-day Tokyo itinerary, flights, and hotels:\`). Put all structured details inside the generative UI cards!
 - **Never claim a booking was paid or finalized without human approval**. Use \`propose_action\` for irreversible operations.
 `.trim();
 

@@ -838,23 +838,39 @@ p {
   --radius: 12px;
 }
 
-.roam-chat-panel .ck-chat {
+.roam-chat-panel .ck-chat,
+.roam-chat-panel [data-testid="copilot-chat"],
+.roam-chat-panel .copilotKitChat {
   height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   background: transparent !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
-/* Welcome Screen */
+/* Welcome Screen: scrollable, starts at top with bottom room */
 .roam-chat-panel [data-testid="copilot-welcome-screen"] {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  justify-content: center !important;
-  padding: 36px 24px !important;
-  max-width: 680px !important;
+  justify-content: flex-start !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 16px 20px 140px 20px !important;
   margin: 0 auto !important;
   text-align: center !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth !important;
 }
 
 .roam-chat-panel [data-testid="copilot-welcome-screen"] h1 {
@@ -903,14 +919,23 @@ p {
   color: #1d4ed8 !important;
 }
 
-/* Message Feed */
+/* Message Feed & Scroll Container */
 .roam-chat-panel [data-testid="copilot-message-list"],
 .roam-chat-panel [data-testid="copilot-scroll-content"],
 .roam-chat-panel .copilotKitMessages {
-  padding: 24px 32px 140px 32px !important;
+  padding: 24px 28px 180px 28px !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
+  min-height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure any StickToBottom / scroll viewport has smooth scrolling */
+.roam-chat-panel [class*="overflow-y-auto"] {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth !important;
 }
 
 /* User Message Container: transparent, aligned to right */
@@ -993,11 +1018,15 @@ p {
   line-height: 1.35 !important;
 }
 
-/* ScrollToBottom button adjusted to avoid overlapping cards */
-.roam-chat-panel [data-testid="copilot-scroll-to-bottom"] {
-  bottom: 80px !important;
+/* ScrollToBottom button positioned above input overlay */
+.roam-chat-panel [data-testid="copilot-scroll-to-bottom"],
+.roam-chat-panel button[aria-label*="Scroll"] {
+  bottom: 96px !important;
   background: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14) !important;
+  z-index: 25 !important;
+  transition: all 0.2s ease !important;
 }
 
 /* Chat Input Bar */
@@ -1058,13 +1087,13 @@ p {
   max-width: 820px;
   width: 100%;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 12px 16px 40px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   text-align: center;
   animation: fadeIn 0.3s ease;
+  box-sizing: border-box;
 }
 
 .roam-hero-badge-wrap {

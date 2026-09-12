@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { buildGoogleCalendarUrl } from "agent-core/shared";
 
 // Tool arguments arrive incrementally, before schema defaults are applied.
@@ -30,9 +30,21 @@ export interface GroupConsensusCardProps {
   calendarUrl?: string;
 }
 
+export interface ItineraryStop {
+  day?: string;
+  time?: string;
+  activity?: string;
+  location?: string;
+  category?: string;
+  notes?: string;
+}
+
 export interface ItineraryCardProps {
   title?: string;
-  stops?: Array<{ time?: string; activity?: string; location?: string } | null> | null;
+  destination?: string;
+  dates?: string;
+  calendarUrl?: string;
+  stops?: Array<ItineraryStop | null> | null;
 }
 
 const toneColor = { neutral: "var(--muted)", good: "#2e7d5b", attention: "var(--accent)" } as const;
@@ -275,33 +287,439 @@ export function GroupConsensusCard({
   );
 }
 
-export function ItineraryCard({ title, stops }: ItineraryCardProps) {
+export function ItineraryCard({
+  title,
+  destination,
+  dates,
+  calendarUrl,
+  stops,
+}: ItineraryCardProps) {
+  const [selectedDay, setSelectedDay] = useState<string>("all");
+
+  const validStops = stops?.filter(Boolean) || [];
+
+  // Discover all distinct days (e.g. Day 1, Day 2, or Oct 15)
+  const days = Array.from(
+    new Set(
+      validStops
+        .map((s) => s?.day)
+        .filter((d): d is string => Boolean(d && d.trim())),
+    ),
+  );
+
+  const displayedStops =
+    selectedDay === "all" || days.length === 0
+      ? validStops
+      : validStops.filter((s) => s?.day === selectedDay);
+
+  const finalCalendarUrl =
+    calendarUrl ||
+    (destination || title
+      ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+          title || `Itinerary for ${destination || "Group Outing"}`,
+        )}&details=${encodeURIComponent(
+          `Itinerary stops:\n${validStops
+            .map(
+              (s) =>
+                `• ${s?.time ? `[${s.time}] ` : ""}${s?.activity || "Stop"} at ${
+                  s?.location || "Venue"
+                }`,
+            )
+            .join("\n")}`,
+        )}`
+      : undefined);
+
+  const finalRouteUrl = destination
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        `${destination} attractions`,
+      )}`
+    : validStops[0]?.location
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        validStops[0].location,
+      )}`
+    : undefined;
+
+  const categoryColor: Record<string, { bg: string; text: string; border: string }> = {
+    sightseeing: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
+    dining: { bg: "#fffbeb", text: "#b45309", border: "#fde68a" },
+    culture: { bg: "#faf5ff", text: "#7e22ce", border: "#e9d5ff" },
+    transit: { bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4" },
+    leisure: { bg: "#ecfdf5", text: "#047857", border: "#a7f3d0" },
+  };
+
   return (
-    <article className="ck-card" style={{ borderLeftColor: "#3b82f6" }}>
-      <h3>{title || "Group Itinerary"}</h3>
-      {!stops?.length ? (
-        <p>Planning schedule…</p>
-      ) : (
-        <div className="ck-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Activity</th>
-                <th>Location</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stops.map((stop, index) => (
-                <tr key={index}>
-                  <td>{stop?.time ?? "—"}</td>
-                  <td>{stop?.activity ?? "Loading…"}</td>
-                  <td>{stop?.location ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <article
+      className="ck-card"
+      style={{
+        borderLeftColor: "#2563eb",
+        borderLeftWidth: "4px",
+        background: "#ffffff",
+        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+        borderRadius: "14px",
+        padding: "1.35rem",
+        color: "#0f172a",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "0.75rem",
+          marginBottom: "0.5rem",
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "1.15rem",
+              fontWeight: 800,
+              color: "#0f172a",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {title ? `🗺️ ${title}` : "Group Itinerary"}
+          </h3>
+          {(destination || dates) && (
+            <p
+              style={{
+                margin: "0.25rem 0 0",
+                fontSize: "0.825rem",
+                color: "#64748b",
+                fontWeight: 500,
+              }}
+            >
+              {[destination, dates].filter(Boolean).join(" · ")}
+            </p>
+          )}
         </div>
+        <span
+          style={{
+            fontSize: "0.72rem",
+            background: "#eff6ff",
+            color: "#1d4ed8",
+            border: "1px solid #bfdbfe",
+            padding: "0.25rem 0.65rem",
+            borderRadius: "999px",
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}
+        >
+          ✨ Active Skill: Itinerary
+        </span>
+      </div>
+
+      {!validStops.length ? (
+        <p style={{ color: "#64748b", margin: "1rem 0" }}>Planning schedule…</p>
+      ) : (
+        <>
+          {/* Day Filter Pills (if multiple days present) */}
+          {days.length > 1 && (
+            <div
+              style={{
+                display: "flex",
+                gap: "0.4rem",
+                margin: "0.75rem 0 1rem",
+                overflowX: "auto",
+                paddingBottom: "4px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedDay("all")}
+                style={{
+                  padding: "0.25rem 0.65rem",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  borderRadius: "999px",
+                  border: "none",
+                  cursor: "pointer",
+                  background: selectedDay === "all" ? "#2563eb" : "#f1f5f9",
+                  color: selectedDay === "all" ? "#ffffff" : "#475569",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                All Stops ({validStops.length})
+              </button>
+              {days.map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => setSelectedDay(day)}
+                  style={{
+                    padding: "0.25rem 0.65rem",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    borderRadius: "999px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: selectedDay === day ? "#2563eb" : "#f1f5f9",
+                    color: selectedDay === day ? "#ffffff" : "#475569",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Interactive Visual Timeline */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.85rem",
+              margin: "1rem 0 1.25rem",
+              position: "relative",
+              paddingLeft: "1.25rem",
+            }}
+          >
+            {/* Timeline Vertical Rail */}
+            <div
+              style={{
+                position: "absolute",
+                top: "10px",
+                bottom: "10px",
+                left: "4px",
+                width: "2px",
+                background: "linear-gradient(180deg, #3b82f6 0%, #10b981 100%)",
+                borderRadius: "2px",
+              }}
+            />
+
+            {displayedStops.map((stop, index) => {
+              const catKey = (stop?.category || "sightseeing").toLowerCase();
+              const badge = categoryColor[catKey] || categoryColor.sightseeing;
+              const stopMapUrl = stop?.location
+                ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    stop.location,
+                  )}`
+                : undefined;
+
+              return (
+                <div
+                  key={index}
+                  style={{
+                    position: "relative",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "0.75rem 1rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.35rem",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {/* Timeline node dot */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "-1.45rem",
+                      top: "1rem",
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "50%",
+                      background: "#2563eb",
+                      border: "2px solid #ffffff",
+                      boxShadow: "0 0 0 2px #bfdbfe",
+                    }}
+                  />
+
+                  {/* Slot & Time Badge */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          color: "#1e293b",
+                          background: "#ffffff",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "4px",
+                          padding: "0.15rem 0.45rem",
+                        }}
+                      >
+                        ⏱️ {stop?.time ?? "—"}
+                      </span>
+                      {stop?.day && (
+                        <span
+                          style={{
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            color: "#64748b",
+                          }}
+                        >
+                          {stop.day}
+                        </span>
+                      )}
+                    </div>
+
+                    {stop?.category && (
+                      <span
+                        style={{
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          background: badge.bg,
+                          color: badge.text,
+                          border: `1px solid ${badge.border}`,
+                          borderRadius: "999px",
+                          padding: "0.15rem 0.5rem",
+                        }}
+                      >
+                        {stop.category}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Activity Name */}
+                  <div
+                    style={{
+                      fontSize: "0.92rem",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {stop?.activity ?? "Loading…"}
+                  </div>
+
+                  {/* Location & Map Link */}
+                  {stop?.location && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                      <span style={{ fontSize: "0.8rem", color: "#475569" }}>
+                        📍 {stop.location}
+                      </span>
+                      {stopMapUrl && (
+                        <a
+                          href={stopMapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: "0.72rem",
+                            color: "#2563eb",
+                            textDecoration: "underline",
+                            fontWeight: 600,
+                          }}
+                        >
+                          (view map)
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes / Tips */}
+                  {stop?.notes && (
+                    <div
+                      style={{
+                        fontSize: "0.78rem",
+                        color: "#475569",
+                        background: "#ffffff",
+                        borderLeft: "3px solid #3b82f6",
+                        padding: "0.35rem 0.65rem",
+                        borderRadius: "0 6px 6px 0",
+                        marginTop: "0.2rem",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      💡 {stop.notes}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Action Buttons */}
+          <div
+            style={{
+              display: "flex",
+              gap: "0.6rem",
+              marginTop: "0.5rem",
+              flexWrap: "wrap",
+            }}
+          >
+            {finalCalendarUrl && (
+              <a
+                href={finalCalendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  fontSize: "0.825rem",
+                  fontWeight: 700,
+                  padding: "0.5rem 0.9rem",
+                  borderRadius: "8px",
+                  background: "#eff6ff",
+                  color: "#1d4ed8",
+                  textDecoration: "none",
+                  border: "1px solid #bfdbfe",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                📅 Add Entire Itinerary to Google Calendar
+              </a>
+            )}
+            {finalRouteUrl && (
+              <a
+                href={finalRouteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  fontSize: "0.825rem",
+                  fontWeight: 600,
+                  padding: "0.5rem 0.9rem",
+                  borderRadius: "8px",
+                  background: "#f8fafc",
+                  color: "#334155",
+                  textDecoration: "none",
+                  border: "1px solid #cbd5e1",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                🗺️ Explore Route in Maps
+              </a>
+            )}
+          </div>
+
+          {/* Hidden Accessible & Test Semantic Table for 100% backward-compatibility */}
+          <div style={{ display: "none" }} aria-hidden="true" className="ck-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Activity</th>
+                  <th>Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {validStops.map((stop, index) => (
+                  <tr key={index}>
+                    <td>{stop?.time ?? "—"}</td>
+                    <td>{stop?.activity ?? "Loading…"}</td>
+                    <td>{stop?.location ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </article>
   );

@@ -97,25 +97,25 @@ function HomeContent() {
   const recipeSuggestions =
     activeRecipe === "travel"
       ? [
-          {
-            title: "✈️ Plan 4-Day Tokyo Trip with Flights & Hotels",
-            message: `Plan a 4-day group trip to Tokyo for our group: ${promptSummary}. Recommend direct flights from Singapore with airlines & prices, top 4-star hotels near transit, and draw a travel_plan_card with a 1-click Google Calendar schedule.`,
-          },
-          {
-            title: "🏨 Curate Quiet 4-Star Stays with Rooftop Lounges",
-            message: `Find 2 top-rated hotels in Tokyo for our group with quiet rooms, easy transit access, and rooftop lounges. Draw a flight_hotel_card.`,
-          },
-          {
-            title: "📅 Schedule Trip Itinerary to Google Calendar",
-            message: `Create a comprehensive day-by-day itinerary for our Tokyo trip and schedule all flight segments and key activities directly to Google Calendar.`,
-          },
-          {
-            title: "🔔 Generate Flight Status & Check-In Alert",
-            message: `Generate a travel notification alert for Singapore Airlines flight SQ638 check-in and luggage advisory. Draw a travel_alert_card.`,
-          },
-        ]
+        {
+          title: "✈️ Plan 4-Day Tokyo Trip with Flights & Hotels",
+          message: `Plan a 4-day group trip to Tokyo for our group: ${promptSummary}. Recommend direct flights from Singapore with airlines & prices, top 4-star hotels near transit, and draw a travel_plan_card with a 1-click Google Calendar schedule.`,
+        },
+        {
+          title: "🏨 Curate Quiet 4-Star Stays with Rooftop Lounges",
+          message: `Find 2 top-rated hotels in Tokyo for our group with quiet rooms, easy transit access, and rooftop lounges. Draw a flight_hotel_card.`,
+        },
+        {
+          title: "📅 Schedule Trip Itinerary to Google Calendar",
+          message: `Create a comprehensive day-by-day itinerary for our Tokyo trip and schedule all flight segments and key activities directly to Google Calendar.`,
+        },
+        {
+          title: "🔔 Generate Flight Status & Check-In Alert",
+          message: `Generate a travel notification alert for Singapore Airlines flight SQ638 check-in and luggage advisory. Draw a travel_alert_card.`,
+        },
+      ]
       : activeRecipe === "bill_split"
-      ? [
+        ? [
           {
             title: "💸 Split Team Dinner Bill ($145 SGD by Ramesh)",
             message: `Split our team dinner bill of $145.00 SGD paid by Ramesh among: Sathish ($45 for vegetarian dishes), Alice ($40 for vegan bowl & drink), and Ramesh ($60 for smoked ribs & craft beer). Calculate the exact settlement matrix and draw a bill_split_card.`,
@@ -133,7 +133,7 @@ function HomeContent() {
             message: `Confirm that all outstanding balances for our dinner and drinks have been paid via PayNow and mark the bill as settled.`,
           },
         ]
-      : [
+        : [
           {
             title: "🎯 Find Consensus Dinner Spot",
             message: `Find our best consensus dinner spot in ${settings.neighborhood} for our group: ${promptSummary}. Ensure zero compromise on dietary restrictions. Draw a consensus_card with match scores, Google Maps link, and Google Calendar button.`,
@@ -205,34 +205,9 @@ function HomeContent() {
                 <span style={{ fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.03em", color: "#0f172a" }}>
                   Roam
                 </span>
-                <span
-                  style={{
-                    fontSize: "0.68rem",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    padding: "2px 8px",
-                    borderRadius: "999px",
-                    background:
-                      activeRecipe === "travel"
-                        ? "rgba(37, 99, 235, 0.12)"
-                        : activeRecipe === "bill_split"
-                        ? "rgba(16, 185, 129, 0.12)"
-                        : "rgba(217, 119, 6, 0.12)",
-                    color:
-                      activeRecipe === "travel"
-                        ? "#2563eb"
-                        : activeRecipe === "bill_split"
-                        ? "#059669"
-                        : "#d97706",
-                    border: "1px solid rgba(0,0,0,0.08)",
-                  }}
-                >
-                  Multi-Recipe Assistant
-                </span>
               </div>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
-                Multiplayer Dining, Travel Planning &amp; Group Bill Splitting
+                Dining, Travel Planning &amp; Group Bill Splitting
               </p>
             </div>
 
@@ -500,30 +475,29 @@ function HomeContent() {
                           activeRecipe === "travel"
                             ? "#2563eb"
                             : activeRecipe === "bill_split"
-                            ? "#059669"
-                            : "#d97706",
+                              ? "#059669"
+                              : "#d97706",
                         background:
                           activeRecipe === "travel"
                             ? "#eff6ff"
                             : activeRecipe === "bill_split"
-                            ? "#ecfdf5"
-                            : "#fffbeb",
+                              ? "#ecfdf5"
+                              : "#fffbeb",
                         padding: "2px 8px",
                         borderRadius: "999px",
-                        border: `1px solid ${
-                          activeRecipe === "travel"
-                            ? "#bfdbfe"
-                            : activeRecipe === "bill_split"
+                        border: `1px solid ${activeRecipe === "travel"
+                          ? "#bfdbfe"
+                          : activeRecipe === "bill_split"
                             ? "#a7f3d0"
                             : "#fde68a"
-                        }`,
+                          }`,
                       }}
                     >
                       {activeRecipe === "travel"
                         ? "✈️ Skill: Travel Planner"
                         : activeRecipe === "bill_split"
-                        ? "💸 Skill: Bill Splitter"
-                        : "🍽️ Skill: Outing & Dining"}
+                          ? "💸 Skill: Bill Splitter"
+                          : "🍽️ Skill: Outing & Dining"}
                     </span>
                   </div>
                   <span style={{ fontSize: "11px", color: "#64748b" }}>
@@ -701,8 +675,8 @@ function HomeContent() {
                     activeRecipe === "travel"
                       ? "Ask Roam to plan a trip, compare flights/hotels, or schedule to Google Calendar…"
                       : activeRecipe === "bill_split"
-                      ? "Ask Roam to split a group bill, itemize shares, or calculate settlements…"
-                      : "Ask Roam for consensus picks, itineraries, or drag & drop a menu flyer…",
+                        ? "Ask Roam to split a group bill, itemize shares, or calculate settlements…"
+                        : "Ask Roam for consensus picks, itineraries, or drag & drop a menu flyer…",
                 }}
               />
 

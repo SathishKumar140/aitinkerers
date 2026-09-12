@@ -140,12 +140,15 @@ export const ItineraryCard = defineChannelComponent({
     "Draw an ordered group itinerary or schedule with times, stops, and activities. Call this when coordinating multiple stops or times for a team outing or offsite.",
   parameters: z.object({
     title: z.string().default("Group Itinerary"),
+    destination: z.string().optional().describe("Destination or city."),
     stops: z
       .array(
         z.object({
+          day: z.string().optional().describe("Day label, e.g. 'Day 1'."),
           time: z.string().describe("Time, e.g. '7:00 PM' or '19:30'."),
           activity: z.string().describe("Activity or venue."),
           location: z.string().describe("Address or neighborhood."),
+          category: z.string().optional().describe("Category of activity."),
           notes: z.string().optional().describe("Special notes or reservations."),
         }),
       )
