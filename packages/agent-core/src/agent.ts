@@ -23,11 +23,14 @@ export type AgentFactoryOptions = {
   workplace?: boolean;
   /** Override the default incident prompt for a surface-specific starter. */
   prompt?: string;
+  /** Override the model resolved from env — useful when a surface (e.g. Slack)
+   * needs a faster/cheaper model than the web app. */
+  model?: string;
 };
 
 export function makeAgent(threadId: string, options: AgentFactoryOptions = {}) {
   const agent = new BuiltInAgent({
-    model: resolveModel(),
+    model: options.model ?? resolveModel(),
     prompt: options.prompt ?? SYSTEM_PROMPT,
 
     // NOT optional in practice. maxSteps defaults to 1, which means the agent

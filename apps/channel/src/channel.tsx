@@ -71,9 +71,13 @@ export const channel = createChannel({
 // of needing to be @-mentioned every single turn.
 channel.onMention(async ({ thread, message }) => {
   console.log(`\n👉 [SLACK EVENT] @-mention received: "${message?.text || ""}" (conv: ${thread.conversationKey})`);
-  await thread.subscribe();
-  await thread.runAgent();
-  console.log(`✓ [SLACK EVENT] Agent finished reply for conv ${thread.conversationKey}\n`);
+  try {
+    await thread.subscribe();
+    await thread.runAgent();
+    console.log(`✓ [SLACK EVENT] Agent finished reply for conv ${thread.conversationKey}\n`);
+  } catch (err) {
+    console.error(`❌ [SLACK EVENT] Agent error on mention (conv: ${thread.conversationKey}):`, err);
+  }
 });
 
 // Non-mentioned turns only ever reach onMessage — gate them on the flag or the
@@ -82,8 +86,12 @@ channel.onMessage(async ({ thread, message }) => {
   const subscribed = await thread.isSubscribed();
   console.log(`👉 [SLACK EVENT] Message received: "${message?.text || ""}" (subscribed: ${subscribed})`);
   if (subscribed) {
-    await thread.runAgent();
-    console.log(`✓ [SLACK EVENT] Agent finished following up on conv ${thread.conversationKey}\n`);
+    try {
+      await thread.runAgent();
+      console.log(`✓ [SLACK EVENT] Agent finished following up on conv ${thread.conversationKey}\n`);
+    } catch (err) {
+      console.error(`❌ [SLACK EVENT] Agent error on message (conv: ${thread.conversationKey}):`, err);
+    }
   }
 });
 

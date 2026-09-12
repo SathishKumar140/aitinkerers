@@ -102,9 +102,9 @@ export const GroupConsensusCard = defineChannelComponent({
           <Markdown>{`*Why it works for everyone:*\n${whyItWorks.map((item) => `• *${item.member}*: ${item.reason}`).join("\n")}`}</Markdown>
         </Section>
         <Actions>
-          <Button url={finalMapUrl} style="primary">📍 Open in Maps</Button>
-          <Button url={finalCalendarUrl}>📅 Add to Google Calendar</Button>
-          {sourceUrl && <Button url={sourceUrl}>🌐 Website</Button>}
+          <Button value="maps" url={finalMapUrl} style="primary">📍 Open in Maps</Button>
+          <Button value="cal" url={finalCalendarUrl}>📅 Add to Google Calendar</Button>
+          {sourceUrl && <Button value="site" url={sourceUrl}>🌐 Website</Button>}
           <Button
             value="confirm_consensus"
             onClick={async ({ thread }) => {
@@ -324,10 +324,10 @@ export const TravelPlanCard = defineChannelComponent({
           <Markdown>{`*Itinerary Highlights:*\n${highlights.map((h) => `• ${h}`).join("\n")}`}</Markdown>
         </Section>
         <Actions>
-          <Button url={finalCalendarUrl} style="primary">
+          <Button value="cal" url={finalCalendarUrl} style="primary">
             📅 Add Trip to Google Calendar
           </Button>
-          <Button url={finalMapUrl}>🗺️ View Destination Map</Button>
+          <Button value="map" url={finalMapUrl}>🗺️ View Destination Map</Button>
         </Actions>
       </Message>
     );
@@ -402,10 +402,10 @@ export const FlightHotelCard = defineChannelComponent({
           <Markdown>{`*🏨 Recommended Stays:*\n${hotelsSummary}`}</Markdown>
         </Section>
         <Actions>
-          <Button url={defaultFlightsUrl} style="primary">
+          <Button value="flights" url={defaultFlightsUrl} style="primary">
             ✈️ Search Flights
           </Button>
-          <Button url={defaultHotelsUrl}>🏨 Search Hotels</Button>
+          <Button value="hotels" url={defaultHotelsUrl}>🏨 Search Hotels</Button>
         </Actions>
       </Message>
     );
@@ -445,7 +445,7 @@ export const TravelAlertCard = defineChannelComponent({
         </Section>
         {actionUrl && (
           <Actions>
-            <Button url={actionUrl} style="primary">
+            <Button value="action" url={actionUrl} style="primary">
               {actionLabel || "View Details"}
             </Button>
           </Actions>
@@ -555,56 +555,49 @@ export const BillSplitCard = defineChannelComponent({
 });
 
 /**
- * The Roam welcome message in Slack threads supporting multiple recipes.
+ * The Roam welcome message posted when the bot joins a channel.
  */
 export function welcomeMessage(platform: string) {
   return (
     <Message accent="#2563EB">
-      <Header>Roam: Multiplayer Assistant</Header>
+      <Header>Roam — Your Group Planning Assistant</Header>
       <Section>
         <Markdown>
-          {"I am your multiplayer team assistant on " +
+          {"Ready to help on " +
             platform +
-            "! I support 3 specialized recipes:\n\n" +
-            "• 🍽️ **Outing & Dining:** Group dinners, constraint arbitration, 1-click Google Calendar.\n" +
-            "• ✈️ **Travel Planner:** Multi-day trips, flight & hotel picks, travel alerts, calendar schedule.\n" +
-            "• 💸 **Bill Splitter:** Splitwise-style group bill splitting & settlement calculations."}
+            "! @-mention me anytime to:\n\n" +
+            "• 🍽️ **Outings & Dining:** Consensus restaurant picks, Google Calendar invite.\n" +
+            "• ✈️ **Travel:** Multi-day itineraries, flights, hotels & calendar schedule.\n" +
+            "• 💸 **Bill Splitting:** Splitwise-style settlements."}
         </Markdown>
       </Section>
-      <Fields>
-        <Field label="Supported Recipes">🍽️ Outings · ✈️ Travel · 💸 Bill Split</Field>
-        <Field label="Platform Features">Interactive Cards · Google Calendar · Maps</Field>
-      </Fields>
       <Actions>
         <Button
-          value="plan_outing"
+          value="outing"
           style="primary"
           onClick={async ({ thread }) => {
             await thread.runAgent({
-              prompt:
-                "Read this thread and find our best group consensus dinner spot in Singapore.",
+              prompt: "Find the best group consensus dinner spot from this thread.",
             });
           }}
         >
           🍽️ Plan Outing
         </Button>
         <Button
-          value="plan_travel"
+          value="travel"
           onClick={async ({ thread }) => {
             await thread.runAgent({
-              prompt:
-                "Plan a 4-day group trip to Tokyo with flight & hotel recommendations and Google Calendar link.",
+              prompt: "Plan a group trip based on this thread.",
             });
           }}
         >
           ✈️ Plan Travel
         </Button>
         <Button
-          value="split_bill"
+          value="split"
           onClick={async ({ thread }) => {
             await thread.runAgent({
-              prompt:
-                "Split our team dinner bill of $145 SGD paid by Ramesh among Sathish ($45), Alice ($40), and Ramesh ($60).",
+              prompt: "Split the bill mentioned in this thread.",
             });
           }}
         >

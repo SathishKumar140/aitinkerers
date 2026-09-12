@@ -157,7 +157,7 @@ export const createCalendarEvent = defineChannelTool({
             <Context>{`Participants: ${args.attendees.join(", ")}`}</Context>
           )}
           <Actions>
-            <Button url={calendarUrl} style="primary">
+            <Button value="open_cal" url={calendarUrl} style="primary">
               📅 Open in Google Calendar
             </Button>
           </Actions>
@@ -178,7 +178,7 @@ export const createCalendarEvent = defineChannelTool({
           <Context>{`Participants: ${args.attendees.join(", ")}`}</Context>
         )}
         <Actions>
-          <Button url={calendarUrl} style="primary">
+          <Button value="add_cal" url={calendarUrl} style="primary">
             📅 Add to Google Calendar
           </Button>
         </Actions>
@@ -188,5 +188,3 @@ export const createCalendarEvent = defineChannelTool({
     return `Calendar invite generated with 1-click button: ${calendarUrl}`;
   },
 });
-
-
