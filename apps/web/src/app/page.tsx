@@ -138,9 +138,16 @@ function HomeContent() {
               }}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2.2" strokeOpacity="0.9" />
-                <path d="M12 6V12L15.5 14" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="12" cy="12" r="2.5" fill="white" />
+                <path
+                  d="M12 2C8.134 2 5 5.134 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.134 15.866 2 12 2Z"
+                  fill="white"
+                  fillOpacity="0.22"
+                  stroke="white"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="12" cy="9" r="3" fill="white" />
               </svg>
             </div>
             <div>
@@ -354,7 +361,7 @@ function HomeContent() {
                     </span>
                   </div>
                   <span style={{ fontSize: "11px", color: "#64748b" }}>
-                    Singapore Multiplayer Outings · Grounded by Exa Places &amp; Google Calendar
+                    Social dining &amp; outings · Zero-compromise group arbitration
                   </span>
                 </div>
               </div>
