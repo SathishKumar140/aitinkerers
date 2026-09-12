@@ -12,13 +12,25 @@ import { incidents } from "@/lib/incidents";
 import { useWorkplace } from "@/lib/use-workplace";
 import { SettingsDrawer } from "@/components/settings-drawer";
 import { GroupCanvas, type VisionResult } from "@/components/group-canvas";
+import { RoamWelcomeScreen } from "@/components/roam-welcome-screen";
+import { GroupProvider, useGroup } from "@/lib/group-context";
+import { GroupConfigModal } from "@/components/group-config-modal";
 
 export default function Home() {
+  return (
+    <GroupProvider>
+      <HomeContent />
+    </GroupProvider>
+  );
+}
+
+function HomeContent() {
   const [selectedId, setSelectedId] = useState<string>(incidents[0].id);
   const workplace = useWorkplace(selectedId);
   const selectIncident = (id: string) => setSelectedId(id);
   const [showSettings, setShowSettings] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { members, settings, setIsConfigModalOpen, promptSummary } = useGroup();
 
   // Vision screenshot state
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
@@ -78,28 +90,24 @@ export default function Home() {
       suggestions: [
         {
           title: "🎯 Find Consensus Dinner Spot",
-          message:
-            "Sathish is pure vegetarian with a $20 budget, and Ramesh wants craft beer and smoked BBQ under $35. Find our best consensus dinner spot near Tanjong Pagar or Chinatown. Draw a consensus_card with scores and maps link.",
+          message: `Find our best consensus dinner spot in ${settings.neighborhood} for our group: ${promptSummary}. Ensure zero compromise on dietary restrictions. Draw a consensus_card with match scores and maps link.`,
         },
         {
           title: "🗺️ Plan 3-Stop Evening Itinerary",
-          message:
-            "Plan a 3-stop Friday evening itinerary around Tanjong Pagar (Dinner, Dessert, Drinks) with walking times and draw an itinerary_card.",
+          message: `Plan a 3-stop Friday evening itinerary around ${settings.neighborhood} (Dinner, Dessert, Drinks) with walking transit times for: ${promptSummary}. Draw an itinerary_card.`,
         },
         {
           title: "🍸 Late Night Mocktails & Drinks",
-          message:
-            "Recommend 2 cozy cocktail spots near Chinatown with non-alcoholic craft options and good vibes for conversation.",
+          message: `Recommend 2 cozy cocktail & mocktail spots near ${settings.neighborhood} with great atmosphere and craft non-alcoholic choices.`,
         },
         {
           title: "📸 Scan & Arbitrate Attached Menu",
-          message:
-            "Inspect the attached menu image to verify if both Sathish (pure veg) and Ramesh (BBQ/beer) can eat comfortably, and check if prices stay within budget.",
+          message: `Inspect the attached menu image to verify if every group member (${promptSummary}) can eat safely within budget.`,
         },
       ],
       available: "before-first-message",
     },
-    [],
+    [promptSummary, settings.neighborhood],
   );
 
   return (
@@ -115,6 +123,7 @@ export default function Home() {
         {/* Top Product Navigation Bar */}
         <header className="roam-navbar">
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {/* Sleek SVG Brand Mark */}
             <div
               style={{
                 width: "36px",
@@ -124,12 +133,15 @@ export default function Home() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#fff",
-                fontSize: "1.15rem",
                 boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+                flexShrink: 0,
               }}
             >
-              🧭
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2.2" strokeOpacity="0.9" />
+                <path d="M12 6V12L15.5 14" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="2.5" fill="white" />
+              </svg>
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -149,13 +161,39 @@ export default function Home() {
                     border: "1px solid rgba(16, 185, 129, 0.25)",
                   }}
                 >
-                  Group Concierge
+                  Social Concierge
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
-                Multiplayer Context Arbitration &amp; Multimodal Concierge
+                Social dining &amp; outings, with zero compromise
               </p>
             </div>
+
+            {/* Configure Group & Constraints Button in Top Nav */}
+            <button
+              type="button"
+              onClick={() => setIsConfigModalOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#eff6ff",
+                color: "#2563eb",
+                border: "1.5px solid #bfdbfe",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                marginLeft: "8px",
+                boxShadow: "0 1px 2px rgba(37, 99, 235, 0.1)",
+                transition: "all 0.15s ease",
+              }}
+              title="Configure Group Members, Dietary Restrictions & Budget Caps"
+            >
+              <span>👥</span>
+              <span>Group ({members.length})</span>
+            </button>
 
             {/* Toggle Sidebar Button in Navbar */}
             <button
@@ -173,7 +211,7 @@ export default function Home() {
                 fontSize: "12px",
                 fontWeight: 600,
                 cursor: "pointer",
-                marginLeft: "6px",
+                marginLeft: "2px",
                 transition: "all 0.15s ease",
               }}
               title={isSidebarOpen ? "Collapse Context Sidebar" : "Expand Context Sidebar"}
@@ -200,7 +238,7 @@ export default function Home() {
               }}
             >
               <span>🇸🇬</span>
-              <span>Singapore (Tanjong Pagar)</span>
+              <span>Singapore · {settings.neighborhood.split("&")[0].trim()}</span>
             </div>
 
             {/* Toggle Settings Sidebar Button */}
@@ -282,19 +320,6 @@ export default function Home() {
 
           {/* Right Pane: AI Concierge & Generative UI Feed */}
           <main className="roam-chat-panel" aria-label="AI Concierge & Chat">
-            {/* Floating Re-open Sidebar Button when collapsed */}
-            {!isSidebarOpen && (
-              <button
-                type="button"
-                onClick={() => setIsSidebarOpen(true)}
-                className="roam-floating-expand-btn"
-                title="Expand Group Context sidebar"
-              >
-                <span>🧭</span>
-                <span>Open Group Context</span>
-              </button>
-            )}
-
             {/* Top Bar of Chat Panel */}
             <div
               style={{
@@ -304,24 +329,32 @@ export default function Home() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                flexShrink: 0,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: "#10b981",
-                    boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
-                  }}
-                />
+                <span className="roam-live-pulse" />
                 <div>
-                  <span style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a" }}>
-                    Roam Concierge
-                  </span>
-                  <span style={{ fontSize: "11px", color: "#64748b", marginLeft: "8px" }}>
-                    Multiplayer Context · Exa Places Grounding · Google Calendar
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontWeight: 700, fontSize: "13.5px", color: "#0f172a" }}>
+                      Roam Concierge
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "10.5px",
+                        fontWeight: 600,
+                        color: "#059669",
+                        background: "#ecfdf5",
+                        padding: "1px 7px",
+                        borderRadius: "999px",
+                        border: "1px solid #a7f3d0",
+                      }}
+                    >
+                      Active
+                    </span>
+                  </div>
+                  <span style={{ fontSize: "11px", color: "#64748b" }}>
+                    Singapore Multiplayer Outings · Grounded by Exa Places &amp; Google Calendar
                   </span>
                 </div>
               </div>
@@ -359,25 +392,8 @@ export default function Home() {
                 )}
 
                 <span style={{ fontSize: "11px", color: "#94a3b8" }}>
-                  💡 Paste <strong>Cmd+V</strong> or drag menu flyers
+                  💡 <strong>Cmd+V</strong> or drag menu flyers
                 </span>
-
-                <button
-                  type="button"
-                  onClick={() => setShowSettings(true)}
-                  style={{
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "6px",
-                    padding: "4px 8px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    color: "#475569",
-                    cursor: "pointer",
-                  }}
-                >
-                  ⚙️ Settings
-                </button>
               </div>
             </div>
 
@@ -501,13 +517,13 @@ export default function Home() {
               </div>
             )}
 
-            {/* Embedded CopilotChat UI */}
+            {/* Embedded CopilotChat UI with Custom Roam Welcome Screen */}
             <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
               <CopilotChat
                 className="ck-chat"
+                welcomeScreen={RoamWelcomeScreen}
                 labels={{
-                  welcomeMessageText: "Where should the group go tonight?",
-                  chatInputPlaceholder: "Ask Roam for consensus picks, itineraries, or drag & drop a menu…",
+                  chatInputPlaceholder: "Ask Roam for consensus picks, itineraries, or drag & drop a menu flyer…",
                 }}
               />
             </div>
@@ -521,6 +537,9 @@ export default function Home() {
           selectedId={selectedId}
           workplace={workplace}
         />
+
+        {/* Slide-over Group Members & Outing Constraints Modal */}
+        <GroupConfigModal />
       </div>
     </>
   );

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import type { WorkplaceState } from "@/lib/use-workplace";
+import { useGroup } from "@/lib/group-context";
 
 export interface VisionResult {
   title: string;
@@ -41,6 +42,7 @@ export function GroupCanvas({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [activeTab, setActiveTab] = useState<"context" | "members">("context");
+  const { members, settings, setIsConfigModalOpen } = useGroup();
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -55,78 +57,70 @@ export function GroupCanvas({
     }
   };
 
-  const members = [
-    {
-      name: "Sathish Kumar",
-      role: "Organizer",
-      avatarBg: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-      initials: "SK",
-      status: "Ready",
-      tags: [
-        { label: "🌱 Pure Veg", type: "emerald" },
-        { label: "💵 <$20 Budget", type: "blue" },
-        { label: "🌿 Outdoor Seating", type: "purple" },
-      ],
-    },
-    {
-      name: "Ramesh",
-      role: "Member",
-      avatarBg: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-      initials: "RM",
-      status: "Ready",
-      tags: [
-        { label: "🥩 Smoked BBQ / Non-Veg", type: "amber" },
-        { label: "🍺 Craft Beer", type: "purple" },
-        { label: "💳 <$35 Target", type: "blue" },
-      ],
-    },
-    {
-      name: "Alice",
-      role: "Member",
-      avatarBg: "linear-gradient(135deg, #ec4899 0%, #be185d 100%)",
-      initials: "AL",
-      status: "Online",
-      tags: [
-        { label: "🥗 Vegan & GF", type: "emerald" },
-        { label: "🚫 Nut Allergy", type: "amber" },
-      ],
-    },
-  ];
+  const budgets = members.map((m) => m.budget);
+  const minBudget = budgets.length > 0 ? Math.min(...budgets) : 20;
+  const maxBudget = budgets.length > 0 ? Math.max(...budgets) : 35;
 
   return (
     <aside className="roam-canvas-panel" aria-label="Group Context Canvas">
       {/* Active Outing Card */}
-      <div className="roam-card" style={{ padding: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+      <div className="roam-card" style={{ padding: "18px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <span className="roam-tag roam-tag-blue" style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 🇸🇬 Active Outing
               </span>
               <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 500 }}>
-                Tonight · 7:30 PM
+                {settings.time}
               </span>
             </div>
-            <h2 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0, color: "#0f172a", letterSpacing: "-0.02em" }}>
-              Singapore Outing: Dinner &amp; Drinks
+            <h2 style={{ fontSize: "1.12rem", fontWeight: 800, margin: 0, color: "#0f172a", letterSpacing: "-0.02em" }}>
+              {settings.title}
             </h2>
           </div>
           <span
             style={{
-              width: "10px",
-              height: "10px",
+              width: "9px",
+              height: "9px",
               borderRadius: "50%",
               background: "#10b981",
-              boxShadow: "0 0 0 4px rgba(16, 185, 129, 0.2)",
+              boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.25)",
               marginTop: "4px",
             }}
-            title="Live Multiplayer Session"
+            title="Live Session Synced"
           />
         </div>
 
-        <p style={{ margin: "0 0 14px", fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
-          📍 Target Area: <strong>Tanjong Pagar &amp; Chinatown</strong> · Walkable transit zone with outdoor seating and craft beverages.
+        <p style={{ margin: "0 0 10px", fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
+          📍 Target: <strong>{settings.neighborhood}</strong> · {settings.strictDietary ? "Zero compromise dietary filtering." : "Flexible matching."}
         </p>
+
+        {/* Configure Group & Constraints Button */}
+        <button
+          type="button"
+          onClick={() => setIsConfigModalOpen(true)}
+          style={{
+            width: "100%",
+            marginBottom: "12px",
+            padding: "7px 12px",
+            background: "#eff6ff",
+            border: "1.5px solid #bfdbfe",
+            borderRadius: "8px",
+            color: "#2563eb",
+            fontWeight: 700,
+            fontSize: "12px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            transition: "all 0.15s ease",
+          }}
+        >
+          <span>✏️</span>
+          <span>Configure Members &amp; Constraints</span>
+        </button>
 
         {/* Quick Tabs */}
         <div style={{ display: "flex", gap: "6px", background: "#f1f5f9", padding: "3px", borderRadius: "8px" }}>
@@ -193,7 +187,7 @@ export function GroupCanvas({
               <div style={{ width: "100%", height: "100%", background: "#10b981", borderRadius: "999px" }} />
             </div>
             <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
-              Pure Veg (Sathish) + Non-Veg (Ramesh) dual-friendly menus.
+              {members.map((m) => `${m.name.split(" ")[0]} (${m.diet})`).join(" + ")} dual-friendly menus.
             </div>
           </div>
 
@@ -207,7 +201,7 @@ export function GroupCanvas({
               <div style={{ width: "94%", height: "100%", background: "#2563eb", borderRadius: "999px" }} />
             </div>
             <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
-              Target range: $18 – $30 per person (no surprise service markups).
+              Target range: ${minBudget} – ${maxBudget} per person across group preferences.
             </div>
           </div>
 
@@ -221,7 +215,7 @@ export function GroupCanvas({
               <div style={{ width: "92%", height: "100%", background: "#8b5cf6", borderRadius: "999px" }} />
             </div>
             <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
-              Within 6 mins walk from Tanjong Pagar / Maxwell MRT.
+              Within 6 mins walk from {settings.transitStop}.
             </div>
           </div>
         </div>
@@ -229,7 +223,7 @@ export function GroupCanvas({
         /* Member Roster List */
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {members.map((m) => (
-            <div key={m.name} className="roam-member-chip">
+            <div key={m.id} className="roam-member-chip">
               <div className="roam-avatar" style={{ background: m.avatarBg }}>
                 {m.initials}
               </div>
@@ -238,24 +232,48 @@ export function GroupCanvas({
                   <span style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a" }}>
                     {m.name}
                   </span>
-                  <span style={{ fontSize: "10.5px", color: "#64748b", background: "#f1f5f9", padding: "1px 6px", borderRadius: "4px" }}>
-                    {m.role}
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#2563eb", background: "#eff6ff", padding: "1px 6px", borderRadius: "4px" }}>
+                    &lt;${m.budget}
                   </span>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                  {m.tags.map((t, i) => (
-                    <span
-                      key={i}
-                      className={`roam-tag roam-tag-${t.type}`}
-                      style={{ fontSize: "10px", padding: "2px 6px" }}
-                    >
-                      {t.label}
+                  <span className="roam-tag roam-tag-emerald" style={{ fontSize: "10px" }}>
+                    {m.diet}
+                  </span>
+                  {m.allergies && (
+                    <span className="roam-tag roam-tag-amber" style={{ fontSize: "10px" }}>
+                      ⚠️ {m.allergies}
                     </span>
-                  ))}
+                  )}
+                  <span className="roam-tag roam-tag-purple" style={{ fontSize: "10px" }}>
+                    {m.vibe}
+                  </span>
                 </div>
               </div>
             </div>
           ))}
+
+          <button
+            type="button"
+            onClick={() => setIsConfigModalOpen(true)}
+            style={{
+              padding: "9px 12px",
+              background: "#ffffff",
+              border: "1.5px dashed #cbd5e1",
+              borderRadius: "10px",
+              color: "#2563eb",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span>+ Add / Configure Members</span>
+          </button>
         </div>
       )}
 

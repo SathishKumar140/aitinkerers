@@ -904,14 +904,64 @@ p {
 }
 
 /* Message Feed */
-.roam-chat-panel [data-testid="copilot-message-list"] {
-  padding: 24px 32px !important;
+.roam-chat-panel [data-testid="copilot-message-list"],
+.roam-chat-panel [data-testid="copilot-scroll-content"],
+.roam-chat-panel .copilotKitMessages {
+  padding: 24px 32px 140px 32px !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
 }
 
+/* User Message Container: transparent, aligned to right */
+.roam-chat-panel [data-testid="copilot-user-message"] {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 6px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  max-width: 100% !important;
+}
+
+/* The actual User Message Bubble */
+.roam-chat-panel [data-testid="copilot-user-message"] > div,
+.roam-chat-panel [data-testid="copilot-user-message"] .cpk\:bg-muted,
+.roam-chat-panel .copilotKitUserMessage .cpk\:bg-muted {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border-radius: 18px 18px 4px 18px !important;
+  padding: 12px 18px !important;
+  font-size: 13.5px !important;
+  line-height: 1.55 !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.22) !important;
+  max-width: 75% !important;
+  border: none !important;
+}
+
+.roam-chat-panel [data-testid="copilot-user-message"] p,
+.roam-chat-panel [data-testid="copilot-user-message"] span,
+.roam-chat-panel [data-testid="copilot-user-message"] div {
+  color: #ffffff !important;
+}
+
+/* Assistant Message Container & Bubble */
 .roam-chat-panel [data-testid="copilot-assistant-message"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 6px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  max-width: 100% !important;
+}
+
+.roam-chat-panel [data-testid="copilot-assistant-message"] .cpk\:prose {
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 16px !important;
@@ -919,21 +969,35 @@ p {
   font-size: 14px !important;
   line-height: 1.65 !important;
   color: #1e293b !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
-  max-width: 88% !important;
-  position: relative !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  max-width: 85% !important;
 }
 
-.roam-chat-panel [data-testid="copilot-user-message"] {
-  background: #0f172a !important;
-  color: #ffffff !important;
-  border-radius: 16px 16px 4px 16px !important;
-  padding: 12px 18px !important;
-  font-size: 14px !important;
-  line-height: 1.55 !important;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12) !important;
-  max-width: 80% !important;
-  margin-left: auto !important;
+/* Generative UI Cards (Consensus, Itinerary, Incident) */
+.ck-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 4px solid #10b981 !important;
+  border-radius: 14px !important;
+  padding: 20px 22px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+  margin: 12px 0 !important;
+  max-width: 720px !important;
+  width: 100% !important;
+}
+
+.ck-card h3 {
+  font-size: 1.12rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.35 !important;
+}
+
+/* ScrollToBottom button adjusted to avoid overlapping cards */
+.roam-chat-panel [data-testid="copilot-scroll-to-bottom"] {
+  bottom: 80px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
 /* Chat Input Bar */
@@ -984,5 +1048,222 @@ p {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ==========================================================================
+   Roam Custom Hero & Welcome Experience
+   ========================================================================== */
+
+.roam-welcome-container {
+  max-width: 820px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.roam-hero-badge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.roam-hero-icon-pulse {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #2563eb 0%, #10b981 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.3);
+  margin-bottom: 4px;
+  transition: transform 0.2s ease;
+}
+
+.roam-hero-icon-pulse:hover {
+  transform: scale(1.05) rotate(-3deg);
+}
+
+.roam-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.roam-hero-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.roam-hero-title {
+  font-size: 1.85rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.03em !important;
+  margin: 0 0 8px !important;
+  line-height: 1.25 !important;
+}
+
+.roam-hero-subtitle {
+  font-size: 0.88rem !important;
+  color: #64748b !important;
+  margin: 0 0 20px !important;
+  max-width: 580px !important;
+  line-height: 1.5 !important;
+}
+
+/* Group Constraints Strip */
+.roam-group-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 22px;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  max-width: 740px;
+}
+
+.roam-group-strip-header {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  margin-right: 4px;
+}
+
+.roam-group-strip-members {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.roam-member-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.roam-mini-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roam-mini-avatar.sk {
+  background: #4f46e5;
+}
+
+.roam-mini-avatar.rm {
+  background: #059669;
+}
+
+.roam-mini-avatar.al {
+  background: #ec4899;
+}
+
+/* Hero Input Wrap */
+.roam-hero-input-wrap {
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 20px;
+}
+
+.roam-hero-input-wrap [data-testid="copilot-chat-input"] {
+  margin: 0 !important;
+}
+
+/* Curated Prompt Action Cards Grid */
+.roam-prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .roam-prompt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roam-prompt-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.roam-prompt-card:hover {
+  border-color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.12);
+  background: #fafcff;
+}
+
+.roam-live-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  display: inline-block;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }
 

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import type { WorkplaceState } from "@/lib/use-workplace";
 import { WorkplaceFollowups } from "./workplace-followups";
+import { useGroup } from "@/lib/group-context";
 
 interface SettingsDrawerProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export function SettingsDrawer({
   workplace,
 }: SettingsDrawerProps) {
   const [activeTab, setActiveTab] = useState<"workspace" | "integrations" | "preferences">("workspace");
+  const { members, settings, setIsConfigModalOpen } = useGroup();
 
   if (!isOpen) return null;
 
@@ -158,29 +160,55 @@ export function SettingsDrawer({
           {activeTab === "preferences" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                  <h4 style={{ margin: 0, fontSize: "12.5px", fontWeight: 700, color: "#0f172a" }}>
+                    Active Group Constraints ({members.length} Members)
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      setIsConfigModalOpen(true);
+                    }}
+                    style={{
+                      background: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✏️ Configure
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11.5px", color: "#334155" }}>
+                  {members.map((m) => (
+                    <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid #f1f5f9" }}>
+                      <span><strong>{m.name}:</strong> {m.diet}</span>
+                      <span style={{ color: "#2563eb", fontWeight: 600 }}>&lt;${m.budget}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <h4 style={{ margin: "0 0 4px", fontSize: "12.5px", fontWeight: 700, color: "#0f172a" }}>
                   Arbitration Policy
                 </h4>
                 <p style={{ margin: 0, fontSize: "12px", color: "#475569" }}>
-                  <strong>Zero Dietary Compromise:</strong> Any venue selected must provide guaranteed safe choices for pure vegetarian (Sathish) and nut/gluten allergies (Alice).
+                  <strong>{settings.strictDietary ? "Zero Dietary Compromise (Strict):" : "Flexible Matching:"}</strong> Any venue selected must provide guaranteed safe choices for pure vegetarian and allergen-sensitive group members.
                 </p>
               </div>
 
               <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <h4 style={{ margin: "0 0 4px", fontSize: "12.5px", fontWeight: 700, color: "#0f172a" }}>
-                  Price Optimization
+                  Geographic &amp; Transit Focal Point
                 </h4>
                 <p style={{ margin: 0, fontSize: "12px", color: "#475569" }}>
-                  Dual-tier budget matching: targeting spots where vegetarian mains fall under $20, while Ramesh can order BBQ and craft pints under $35 without group fee pressure.
-                </p>
-              </div>
-
-              <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                <h4 style={{ margin: "0 0 4px", fontSize: "12.5px", fontWeight: 700, color: "#0f172a" }}>
-                  Transit &amp; Atmosphere
-                </h4>
-                <p style={{ margin: 0, fontSize: "12px", color: "#475569" }}>
-                  Geographic focal point: Tanjong Pagar, Duxton Hill, and Chinatown within 6 minutes walking distance to Maxwell or Tanjong Pagar MRT.
+                  Focus: <strong>{settings.neighborhood}</strong> within walking distance of {settings.transitStop}.
                 </p>
               </div>
             </div>
