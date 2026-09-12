@@ -32,7 +32,7 @@ export function AppControl({
 
   useAgentContext({
     description:
-      "The incident workspace currently visible to the user, including sample timeline and Ambiguous follow-ups. CRITICAL: propose_followup only prepares a proposal. Only the user's approval button saves it; prose/chat approval never executes a write. Use retrieve_followup or refresh_followups for real reads. Never claim a task was saved without a provider record. Never invent record links.",
+      "The Roam group outing workspace currently visible to the user, including multiplayer participant constraints (dietary, budget, location, vibe), consensus recommendations, and Ambiguous follow-ups. Call consensus_card to draw recommendations. CRITICAL: propose_followup only prepares an itinerary proposal for the user's approval button. Only clicking Approve & save to Ambiguous saves it; prose/chat approval never executes a write. Use retrieve_followup or refresh_followups for real reads. Never claim a task was saved without a provider record. Never invent record links.",
     value: {
       ...workspaceContext(
         selectedId,
@@ -42,19 +42,34 @@ export function AppControl({
       workplaceError: workplace.error,
       proposal: workplace.proposal ?? null,
       lastResult: workplace.notice,
-    },
+    } as any,
   });
 
   useFrontendTool(
     {
       name: "select_incident",
       description:
-        "Open an existing sample incident in the workspace. Use an ID from availableIncidents.",
+        "Open an existing group outing or incident in the workspace. Use an ID from availableIncidents (e.g. INC-1042).",
       parameters: z.object({ incidentId: z.string() }),
       handler: async ({ incidentId }) => {
         const incident = findIncident(incidentId);
         selectIncident(incident.id);
-        return `Opened ${incident.id}: ${incident.title}. The visible details and agent context now show this incident.`;
+        return `Opened ${incident.id}: ${incident.title}. The visible details, member constraints, and agent context now show this outing.`;
+      },
+    },
+    [selectIncident],
+  );
+
+  useFrontendTool(
+    {
+      name: "select_outing",
+      description:
+        "Switch to a different group outing or event in the workspace.",
+      parameters: z.object({ outingId: z.string() }),
+      handler: async ({ outingId }) => {
+        const outing = findIncident(outingId);
+        selectIncident(outing.id);
+        return `Switched to ${outing.id}: ${outing.title}. Context updated with participant constraints.`;
       },
     },
     [selectIncident],
@@ -64,9 +79,9 @@ export function AppControl({
     {
       name: "propose_followup",
       description:
-        "Prepare an Ambiguous task from the selected incident context. Show the exact title and details for the user's approval button. Does not save anything. CRITICAL: wait for the user to click Approve & save to Ambiguous in the page.",
+        "Prepare an Ambiguous task or itinerary item from the selected outing context. Show the exact title and details for the user's approval button. Does not save anything. CRITICAL: wait for the user to click Approve & save to Ambiguous in the page.",
       parameters: z.object({
-        incidentId: z.string(),
+        incidentId: z.string().describe("The outing/incident ID."),
         title: z.string().trim().min(1).max(200),
         details: z.string().trim().min(1).max(4000),
       }),
@@ -94,7 +109,7 @@ export function AppControl({
     {
       name: "refresh_followups",
       description:
-        "Read saved follow-ups for the currently selected incident from Ambiguous. Use after approval or browser refresh to verify persistence.",
+        "Read saved follow-ups for the currently selected outing from Ambiguous. Use after approval or browser refresh to verify persistence.",
       parameters: z.object({}),
       handler: async () => toolResult(() => workplace.refresh()),
     },

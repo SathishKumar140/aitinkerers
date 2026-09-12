@@ -24,6 +24,11 @@ export class ChannelRunAgent extends AbstractAgent {
     threadId?: string,
   ) {
     super({ threadId });
+    this.state = {
+      currentPlan: null,
+      consensus: null,
+      members: [],
+    };
   }
 
   override run(input: RunAgentInput): Observable<BaseEvent> {

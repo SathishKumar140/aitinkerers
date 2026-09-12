@@ -7,7 +7,7 @@
  * it choose one and fill in the props. The interface stays on-brand and
  * pixel-perfect because you wrote it — the agent only decides what to show.
  *
- * These are deliberately the same two components the Slack surface registers
+ * These are deliberately the same components the Slack surface registers
  * with `defineChannelComponent`. Same agent, same intent, native rendering on
  * each surface — which is the whole claim this kit is making.
  *
@@ -16,9 +16,63 @@
 import { useComponent, useHumanInTheLoop } from "@copilotkit/react-core/v2";
 import { z } from "zod";
 
-import { IncidentCard, Timeline } from "./streamed-cards";
+import {
+  GroupConsensusCard,
+  ItineraryCard,
+  IncidentCard,
+  Timeline,
+} from "./streamed-cards";
 
 export function GenerativeUI() {
+  useComponent({
+    name: "consensus_card",
+    description:
+      "Draw the group consensus recommendation as a native interactive card: venue name, cuisine/vibe, price, neighborhood, and a breakdown of why it satisfies each participant.",
+    parameters: z.object({
+      venueName: z.string().describe("Name of the recommended venue or spot."),
+      headline: z.string().describe("Short headline, e.g. 'Consensus Choice: Genesis Bistro'."),
+      cuisineOrCategory: z.string().describe("Cuisine, category, or activity type."),
+      priceTier: z.string().describe("Price indicator (e.g. '$', 'under $20')."),
+      neighborhood: z.string().describe("Neighborhood or location."),
+      matchScore: z.string().optional().describe("Match confidence, e.g. '100% Match'."),
+      participantConstraints: z
+        .array(z.string())
+        .max(6)
+        .default([])
+        .describe("Summary list of participant constraints taken into account."),
+      whyItWorks: z
+        .array(
+          z.object({
+            member: z.string(),
+            reason: z.string(),
+          }),
+        )
+        .min(1)
+        .describe("Point-by-point breakdown for each member."),
+      sourceUrl: z.string().url().optional().describe("Official website or booking URL."),
+      mapUrl: z.string().url().optional().describe("Google Maps URL."),
+      calendarUrl: z.string().url().optional().describe("1-Click Google Calendar event link."),
+    }),
+    render: GroupConsensusCard,
+  });
+
+  useComponent({
+    name: "itinerary_card",
+    description:
+      "Draw an ordered group itinerary or schedule with times, stops, and activities.",
+    parameters: z.object({
+      title: z.string().optional(),
+      stops: z.array(
+        z.object({
+          time: z.string(),
+          activity: z.string(),
+          location: z.string(),
+        }),
+      ),
+    }),
+    render: ItineraryCard,
+  });
+
   useComponent({
     name: "incident_card",
     description:
@@ -50,15 +104,11 @@ export function GenerativeUI() {
    *
    * Same contract as `confirm_action` in the Slack surface: the agent must ask
    * before anything irreversible, and cannot proceed past a refusal.
-   *
-   * `respond` is a function ONLY while the tool call is executing — narrowing on
-   * its presence is safer than importing the ToolCallStatus enum from
-   * @copilotkit/core, which is only a transitive dependency here.
    */
   useHumanInTheLoop({
     name: "propose_action",
     description:
-      "Ask for approval before anything that touches production. Call this FIRST and only continue if it returns approval.",
+      "Ask for approval before anything that touches production or external systems. Call this FIRST and only continue if it returns approval.",
     parameters: z.object({
       action: z.string().describe("What you are about to do, in one plain sentence."),
       blastRadius: z.string().describe("What this affects if it goes wrong."),

@@ -531,3 +531,237 @@ p {
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+
+/* ==========================================================================
+   Project Roam — Elite Product Design System
+   ========================================================================== */
+
+:root {
+  --roam-bg: #f8fafc;
+  --roam-surface: #ffffff;
+  --roam-card-bg: #ffffff;
+  --roam-border: rgba(226, 232, 240, 0.85);
+  --roam-text-primary: #0f172a;
+  --roam-text-secondary: #475569;
+  --roam-text-muted: #64748b;
+  --roam-primary: #2563eb;
+  --roam-primary-hover: #1d4ed8;
+  --roam-accent-emerald: #059669;
+  --roam-accent-amber: #d97706;
+  --roam-accent-indigo: #4f46e5;
+  --roam-radius-lg: 16px;
+  --roam-radius-md: 12px;
+  --roam-radius-sm: 8px;
+  --roam-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --roam-shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  --roam-shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --roam-shadow-glow: 0 0 20px rgba(37, 99, 235, 0.15);
+}
+
+/* App Viewport Shell */
+.roam-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--roam-bg);
+  color: var(--roam-text-primary);
+}
+
+/* Glassmorphic Navbar */
+.roam-navbar {
+  height: 64px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--roam-border);
+  z-index: 40;
+}
+
+/* Dual-Pane Split Layout */
+.roam-layout {
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  height: calc(100vh - 64px);
+  width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .roam-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow-y: auto;
+  }
+}
+
+/* Left Canvas Panel (Scrollable Context & Roster) */
+.roam-canvas-panel {
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  border-right: 1px solid var(--roam-border);
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Right Chat Panel (Conversational AI Stream) */
+.roam-chat-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  position: relative;
+}
+
+/* Product Cards */
+.roam-card {
+  background: var(--roam-card-bg);
+  border: 1px solid var(--roam-border);
+  border-radius: var(--roam-radius-md);
+  padding: 18px;
+  box-shadow: var(--roam-shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.roam-card:hover {
+  box-shadow: var(--roam-shadow-md);
+  border-color: rgba(203, 213, 225, 0.9);
+}
+
+/* Live Member Chip */
+.roam-member-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s ease;
+}
+
+.roam-member-chip:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: var(--roam-shadow-sm);
+}
+
+.roam-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+/* Tag Pill */
+.roam-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.roam-tag-emerald {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.roam-tag-blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.roam-tag-amber {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.roam-tag-purple {
+  background: #faf5ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+
+/* Dropzone Hover Effects */
+.roam-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.roam-dropzone:hover,
+.roam-dropzone.active {
+  border-color: #2563eb;
+  background: #f0f7ff;
+}
+
+/* CopilotKit Chat Overrides to match product aesthetic */
+.roam-chat-panel .ck-chat {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: transparent !important;
+}
+
+.roam-chat-panel .copilotKitMessages {
+  padding: 24px 32px !important;
+  gap: 18px !important;
+}
+
+.roam-chat-panel .copilotKitInput {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+}
+
+.roam-chat-panel .copilotKitInput:focus-within {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+

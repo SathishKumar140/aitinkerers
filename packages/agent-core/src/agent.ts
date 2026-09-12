@@ -42,5 +42,10 @@ export function makeAgent(threadId: string, options: AgentFactoryOptions = {}) {
     mcpServers: options.workplace === false ? [] : [...workplaceMcpServers()],
   });
   agent.threadId = threadId;
+  agent.state = {
+    currentPlan: null,
+    consensus: null,
+    members: [],
+  };
   return agent;
 }

@@ -1,9 +1,9 @@
 /**
- * Agent-rendered components for the on-call agent.
+ * Agent-rendered components for Project Roam Concierge.
  *
  * `defineChannelComponent` turns a component into a tool the agent can call to
- * draw UI itself. During an incident, a native card is easier to scan than a
- * paragraph, but everyone reads a card.
+ * draw UI itself. In Slack, a native card is easier to scan than long prose,
+ * and lets the whole group see why a recommendation fits everyone.
  *
  * One tree renders as Slack Block Kit, Teams Adaptive Cards, and Discord
  * components. A surface that cannot render a node skips it rather than failing.
@@ -25,6 +25,154 @@ import {
   Cell,
 } from "@copilotkit/channels";
 import { z } from "zod";
+import { buildGoogleCalendarUrl } from "agent-core";
+
+/**
+ * Group Consensus Card for Project Roam.
+ * Shows the chosen venue/spot, participant constraints satisfied, and "Why It Works For Everyone".
+ */
+export const GroupConsensusCard = defineChannelComponent({
+  name: "consensus_card",
+  description:
+    "Draw the group consensus recommendation as an interactive native card: venue name, cuisine/vibe, price, neighborhood, and a breakdown of why it satisfies each participant. Call this after arbitrating group constraints and finding a matching venue.",
+  parameters: z.object({
+    venueName: z.string().describe("Name of the recommended venue or spot."),
+    headline: z.string().describe("Punchy headline, e.g. 'Consensus Choice: Genesis Bistro'."),
+    cuisineOrCategory: z.string().describe("Cuisine or category, e.g. 'Asian Vegan & Gluten-Free'."),
+    priceTier: z.string().describe("Price indicator (e.g. '$', '$$', 'under $20')."),
+    neighborhood: z.string().describe("Neighborhood or area (e.g. 'Chinatown / Tanjong Pagar')."),
+    matchScore: z.string().optional().describe("Match confidence, e.g. '100% Group Match'."),
+    participantConstraints: z
+      .array(z.string())
+      .max(6)
+      .default([])
+      .describe("Summary list of participant constraints taken into account."),
+    whyItWorks: z
+      .array(
+        z.object({
+          member: z.string(),
+          reason: z.string(),
+        }),
+      )
+      .min(1)
+      .describe("Point-by-point breakdown for each participant."),
+    sourceUrl: z.string().url().optional().describe("Official website or booking URL."),
+    mapUrl: z.string().url().optional().describe("Google Maps URL."),
+  }),
+  render({
+    venueName,
+    headline,
+    cuisineOrCategory,
+    priceTier,
+    neighborhood,
+    matchScore,
+    participantConstraints,
+    whyItWorks,
+    sourceUrl,
+    mapUrl,
+  }) {
+    const finalMapUrl =
+      mapUrl ||
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        `${venueName} ${neighborhood || "Singapore"}`,
+      )}`;
+
+    const finalCalendarUrl = buildGoogleCalendarUrl({
+      title: headline ? `Dinner: ${venueName} (${headline})` : `Dinner at ${venueName}`,
+      venueName,
+      location: neighborhood || `${venueName}, Singapore`,
+      description: whyItWorks?.map((item) => `${item.member}: ${item.reason}`).join("\n"),
+      attendees: whyItWorks?.map((item) => item.member).filter(Boolean) as string[],
+    });
+
+    return (
+      <Message accent="#2E7D5B">
+        <Header>{headline ? `${venueName} — ${headline}` : venueName}</Header>
+        <Context>{`${matchScore ?? "Group Consensus"} · ${cuisineOrCategory} · ${priceTier}`}</Context>
+        <Fields>
+          <Field label="Location">{neighborhood}</Field>
+          <Field label="Price">{priceTier}</Field>
+        </Fields>
+        {participantConstraints.length > 0 && (
+          <Section>
+            <Markdown>{`*Group constraints satisfied:*\n${participantConstraints.map((c) => `• ${c}`).join("\n")}`}</Markdown>
+          </Section>
+        )}
+        <Section>
+          <Markdown>{`*Why it works for everyone:*\n${whyItWorks.map((item) => `• *${item.member}*: ${item.reason}`).join("\n")}`}</Markdown>
+        </Section>
+        <Actions>
+          <Button url={finalMapUrl} style="primary">📍 Open in Maps</Button>
+          <Button url={finalCalendarUrl}>📅 Add to Google Calendar</Button>
+          {sourceUrl && <Button url={sourceUrl}>🌐 Website</Button>}
+          <Button
+            value="confirm_consensus"
+            onClick={async ({ thread }) => {
+              await thread.post(
+                <Message accent="#2E7D5B">
+                  <Header>🎉 Outing Confirmed for {venueName}!</Header>
+                  <Section>
+                    <Markdown>{`The group has locked in **${venueName}** (${neighborhood || "Singapore"})!\n\nClick below to add this event to your personal Google Calendar:`}</Markdown>
+                  </Section>
+                  <Actions>
+                    <Button url={finalCalendarUrl} style="primary">
+                      📅 Add to Google Calendar
+                    </Button>
+                  </Actions>
+                </Message>,
+              );
+            }}
+          >
+            Vote / Confirm
+          </Button>
+        </Actions>
+      </Message>
+    );
+  },
+});
+
+/**
+ * Ordered group schedule or multi-stop itinerary.
+ */
+export const ItineraryCard = defineChannelComponent({
+  name: "itinerary_card",
+  description:
+    "Draw an ordered group itinerary or schedule with times, stops, and activities. Call this when coordinating multiple stops or times for a team outing or offsite.",
+  parameters: z.object({
+    title: z.string().default("Group Itinerary"),
+    stops: z
+      .array(
+        z.object({
+          time: z.string().describe("Time, e.g. '7:00 PM' or '19:30'."),
+          activity: z.string().describe("Activity or venue."),
+          location: z.string().describe("Address or neighborhood."),
+          notes: z.string().optional().describe("Special notes or reservations."),
+        }),
+      )
+      .min(1)
+      .max(12),
+  }),
+  render({ title, stops }) {
+    return (
+      <Message accent="#2E7D5B">
+        <Header>{title}</Header>
+        <Table
+          columns={[{ header: "Time" }, { header: "Activity" }, { header: "Location" }]}
+        >
+          {stops.map((stop) => (
+            <Row>
+              <Cell>{stop.time}</Cell>
+              <Cell>{stop.activity}</Cell>
+              <Cell>{stop.location}</Cell>
+            </Row>
+          ))}
+        </Table>
+        <Divider />
+        <Context>{`${stops.length} stop(s) scheduled`}</Context>
+      </Message>
+    );
+  },
+});
 
 /** Severity drives the colour rail, so the channel can triage by glance. */
 const SEVERITY = {
@@ -35,23 +183,20 @@ const SEVERITY = {
 } as const;
 
 /**
- * The state of the incident, as one glanceable card.
- *
- * Deliberately has no "what happened" prose field. The thread is the narrative;
- * this is the summary a person joining at minute 40 needs.
+ * Backward-compatible incident card for reference and legacy tests.
  */
 export const IncidentCard = defineChannelComponent({
   name: "incident_card",
   description:
-    "Draw the current state of the incident as a card: severity, what is affected, what is known, and what is being tried. Call this once you have read the thread, and call it again when the picture changes. Prefer it over describing the incident in prose.",
+    "Draw the current state of an issue or decision as a glanceable card.",
   parameters: z.object({
     severity: z.enum(["sev1", "sev2", "sev3", "resolved"]),
-    headline: z.string().describe("What is broken, in under ten words."),
-    impact: z.string().describe("Who or what is affected, concretely."),
-    started: z.string().describe("When it started, as stated in the thread. 'unknown' is a valid answer."),
-    known: z.array(z.string()).max(4).default([]).describe("What the thread has established."),
-    trying: z.array(z.string()).max(3).default([]).describe("What is currently being attempted."),
-    owner: z.string().optional().describe("Who is driving, if the thread says."),
+    headline: z.string().describe("Headline in under ten words."),
+    impact: z.string().describe("Who or what is affected."),
+    started: z.string().describe("When it started."),
+    known: z.array(z.string()).max(4).default([]),
+    trying: z.array(z.string()).max(3).default([]),
+    owner: z.string().optional(),
   }),
   render({ severity, headline, impact, started, known, trying, owner }) {
     const sev = SEVERITY[severity];
@@ -80,20 +225,18 @@ export const IncidentCard = defineChannelComponent({
 });
 
 /**
- * The incident timeline. Handover and the postmortem both run on this, which is
- * why it is worth keeping in the thread rather than someone's notes app.
+ * Backward-compatible timeline component.
  */
 export const Timeline = defineChannelComponent({
   name: "timeline",
-  description:
-    "Draw an ordered timeline of what happened when. Call this when there are three or more events worth ordering — it is what on-call handover and the postmortem are written from.",
+  description: "Draw an ordered timeline of events or schedule items.",
   parameters: z.object({
     title: z.string().default("Timeline"),
     events: z
       .array(
         z.object({
-          at: z.string().describe("Time as the thread states it, e.g. '02:14' or '~20m ago'."),
-          what: z.string().describe("What happened, in one line."),
+          at: z.string().describe("Time."),
+          what: z.string().describe("Description."),
           who: z.string().optional(),
         }),
       )
@@ -123,36 +266,35 @@ export const Timeline = defineChannelComponent({
 });
 
 /**
- * The welcome message. A bot that says nothing when invited looks broken; one
- * that says what it will do on its own gets used.
+ * The Roam welcome message in Slack threads.
  */
 export function welcomeMessage(platform: string) {
   return (
-    <Message accent="#C4145F">
-      <Header>On-call assistant, in the thread</Header>
+    <Message accent="#2E7D5B">
+      <Header>Roam: Multiplayer Group Concierge</Header>
       <Section>
         <Markdown>
-          {"When something breaks, @-mention me. I read what has already been said in this " +
+          {"When planning a team dinner, drinks, or group outing, @-mention me in this " +
             platform +
-            " thread first — you should never have to re-explain an outage to me."}
+            " thread. I read everyone's preferences and dietary needs to find the consensus spot that works for everyone!"}
         </Markdown>
       </Section>
       <Fields>
-        <Field label="I will">Summarise, keep a timeline, look things up</Field>
-        <Field label="I won't">Touch production without a click</Field>
+        <Field label="I will">Extract preferences, arbitrate conflicts, search live venues</Field>
+        <Field label="I won't">Finalize bookings without group confirmation</Field>
       </Fields>
       <Actions>
         <Button
-          value="catchup"
+          value="arbitrate"
           style="primary"
           onClick={async ({ thread }) => {
             await thread.runAgent({
               prompt:
-                "Read this thread and bring me up to speed on the incident. Draw the incident card.",
+                "Read this thread, extract everyone's constraints (diet, budget, location, vibe), and find the best group consensus spot.",
             });
           }}
         >
-          Catch me up
+          Arbitrate group choices
         </Button>
       </Actions>
     </Message>

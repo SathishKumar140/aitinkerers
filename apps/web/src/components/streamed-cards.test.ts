@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { IncidentCard, Timeline } from "./streamed-cards";
+import {
+  IncidentCard,
+  Timeline,
+  GroupConsensusCard,
+  ItineraryCard,
+} from "./streamed-cards";
 
 test("incident card renders loading content before any arguments arrive", () => {
   const html = renderToStaticMarkup(createElement(IncidentCard, {}));
@@ -65,4 +70,52 @@ test("complete incident and timeline arguments render their content", () => {
     assert.ok(timeline.includes(text));
   }
   assert.doesNotMatch(timeline, /Loading|Preparing/);
+});
+
+test("group consensus card renders loading state and complete streamed state", () => {
+  const emptyHtml = renderToStaticMarkup(createElement(GroupConsensusCard, {}));
+  assert.match(emptyHtml, /Finding group consensus recommendation/);
+
+  const fullHtml = renderToStaticMarkup(
+    createElement(GroupConsensusCard, {
+      venueName: "Genesis Plant-Based Bistro",
+      headline: "Consensus Choice: Genesis Bistro",
+      cuisineOrCategory: "Asian Vegan",
+      priceTier: "under $20",
+      neighborhood: "Tanjong Pagar",
+      matchScore: "100% Match",
+      participantConstraints: ["Alice: Vegan & GF", "Bob: <$20"],
+      whyItWorks: [
+        { member: "Alice", reason: "100% plant-based with GF menu" },
+        { member: "Bob", reason: "Average mains $15" },
+      ],
+      mapUrl: "https://maps.google.com/?q=Genesis",
+    }),
+  );
+
+  assert.match(fullHtml, /Genesis Plant-Based Bistro/);
+  assert.match(fullHtml, /100% Match/);
+  assert.match(fullHtml, /Alice: Vegan/);
+  assert.match(fullHtml, /Average mains \$15/);
+  assert.match(fullHtml, /Open in Maps/);
+  assert.match(fullHtml, /Add to Google Calendar/);
+});
+
+test("itinerary card renders schedule table", () => {
+  const emptyHtml = renderToStaticMarkup(createElement(ItineraryCard, {}));
+  assert.match(emptyHtml, /Planning schedule/);
+
+  const fullHtml = renderToStaticMarkup(
+    createElement(ItineraryCard, {
+      title: "Friday Team Dinner",
+      stops: [
+        { time: "18:30", activity: "Meetup", location: "MRT Exit A" },
+        { time: "19:00", activity: "Dinner", location: "Genesis Bistro" },
+      ],
+    }),
+  );
+
+  assert.match(fullHtml, /Friday Team Dinner/);
+  assert.match(fullHtml, /MRT Exit A/);
+  assert.match(fullHtml, /Genesis Bistro/);
 });

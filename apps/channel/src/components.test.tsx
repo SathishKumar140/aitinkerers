@@ -11,7 +11,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { renderToIR } from "@copilotkit/channels";
-import { IncidentCard, Timeline } from "./components";
+import {
+  GroupConsensusCard,
+  ItineraryCard,
+  IncidentCard,
+  Timeline,
+} from "./components";
 
 const ctx = { platform: "slack" as const, signal: new AbortController().signal };
 
@@ -28,6 +33,65 @@ const baseIncident = {
   known: [] as string[],
   trying: [] as string[],
 };
+
+describe("consensus_card", () => {
+  const baseConsensus = {
+    venueName: "Genesis Vegan Bistro",
+    headline: "Consensus Choice: Genesis Bistro",
+    cuisineOrCategory: "Asian Plant-Based & GF",
+    priceTier: "under $20",
+    neighborhood: "Chinatown / Tanjong Pagar",
+    matchScore: "100% Match",
+    participantConstraints: [
+      "Alice: Strictly vegan & gluten-free",
+      "Bob: Under $20 budget",
+      "Charlie: Chinatown / Tanjong Pagar",
+    ],
+    whyItWorks: [
+      { member: "Alice", reason: "Entire menu is 100% plant-based with certified GF options" },
+      { member: "Bob", reason: "Lunch/dinner mains average $14-18, comfortably under $20" },
+      { member: "Charlie", reason: "Located in Chinatown, 2 min walk from Tanjong Pagar MRT" },
+    ],
+    mapUrl: "https://maps.google.com/?q=Genesis+Bistro",
+    sourceUrl: "https://example.com/genesis",
+  };
+
+  it("renders the consensus choice with green accent rail", async () => {
+    const out = await render(GroupConsensusCard.render(baseConsensus, ctx));
+    assert.ok(out.includes("#2E7D5B"), "should use green consensus accent");
+    assert.ok(out.includes("Genesis Vegan Bistro"));
+    assert.ok(out.includes("100% Match"));
+  });
+
+  it("lists all participant constraints and why it works for each member", async () => {
+    const out = await render(GroupConsensusCard.render(baseConsensus, ctx));
+    assert.ok(out.includes("Alice"));
+    assert.ok(out.includes("Bob"));
+    assert.ok(out.includes("Charlie"));
+    assert.ok(out.includes("100% plant-based"));
+    assert.ok(out.includes("comfortably under $20"));
+  });
+
+  it("includes navigation map button and website when provided", async () => {
+    const out = await render(GroupConsensusCard.render(baseConsensus, ctx));
+    assert.ok(out.includes("Open in Maps"));
+    assert.ok(out.includes("https://maps.google.com/?q=Genesis+Bistro"));
+  });
+});
+
+describe("itinerary_card", () => {
+  it("renders scheduled stops with times and locations", async () => {
+    const stops = [
+      { time: "18:30", activity: "Meet at Tanjong Pagar MRT", location: "Exit A" },
+      { time: "19:00", activity: "Dinner at Genesis Bistro", location: "Chinatown" },
+      { time: "20:30", activity: "Drinks & dessert at Afterglow", location: "Keong Saik Rd" },
+    ];
+    const out = await render(ItineraryCard.render({ title: "Friday Team Night", stops }, ctx));
+    assert.ok(out.includes("Friday Team Night"));
+    assert.ok(out.includes("Genesis Bistro"));
+    assert.ok(out.includes("3 stop(s) scheduled"));
+  });
+});
 
 describe("incident_card", () => {
   it("colours the rail by severity, so the channel can triage by glance", async () => {

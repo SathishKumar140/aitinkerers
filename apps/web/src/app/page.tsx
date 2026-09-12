@@ -1,39 +1,94 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   CopilotChat,
   useConfigureSuggestions,
 } from "@copilotkit/react-core/v2";
 import { GenerativeUI } from "@/components/generative-ui";
 import { AppControl } from "@/components/app-control";
-import { findIncident, incidents, workspaceContext } from "@/lib/incidents";
+import { incidents } from "@/lib/incidents";
 import { useWorkplace } from "@/lib/use-workplace";
 import { WorkplaceFollowups } from "@/components/workplace-followups";
+import { GroupCanvas, type VisionResult } from "@/components/group-canvas";
 
 export default function Home() {
   const [selectedId, setSelectedId] = useState<string>(incidents[0].id);
   const workplace = useWorkplace(selectedId);
-  const { selectedIncident: incident } = workspaceContext(
-    selectedId,
-    workplace.status?.status === "connected" ? workplace.status.tasks : [],
-  );
-  const selectIncident = useCallback((id: string) => {
-    setSelectedId(findIncident(id).id);
+  const selectIncident = (id: string) => setSelectedId(id);
+  const [showWorkplace, setShowWorkplace] = useState(false);
+
+  // Vision screenshot state
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [analyzingImage, setAnalyzingImage] = useState(false);
+  const [visionResult, setVisionResult] = useState<VisionResult | null>(null);
+  const [visionError, setVisionError] = useState<string | null>(null);
+
+  // Global paste listener for screenshots
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          const file = items[i].getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              setAttachedImage(reader.result as string);
+              setVisionResult(null);
+              setVisionError(null);
+            };
+            reader.readAsDataURL(file);
+          }
+          break;
+        }
+      }
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
   }, []);
+
+  const handleAnalyzeVision = async () => {
+    if (!attachedImage) return;
+    setAnalyzingImage(true);
+    setVisionError(null);
+    try {
+      const res = await fetch("/api/vision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: attachedImage }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error ?? "Failed to analyze image");
+      }
+      setVisionResult(data.result);
+    } catch (err) {
+      setVisionError(err instanceof Error ? err.message : "Analysis failed");
+    } finally {
+      setAnalyzingImage(false);
+    }
+  };
 
   useConfigureSuggestions(
     {
       suggestions: [
         {
-          title: "Summarize this incident",
+          title: "Arbitrate group dinner constraints",
           message:
-            "Summarize the selected incident using the page context. What needs attention?",
+            "Sathish is pure vegetarian with a $20 budget, and Ramesh wants craft beer and smoked BBQ under $35. Find our best consensus dinner spot near Tanjong Pagar or Chinatown. Draw a consensus_card with scores and maps link.",
         },
         {
-          title: "Propose a follow-up",
+          title: "Plan 3-stop evening itinerary",
           message:
-            "Prepare one useful Ambiguous follow-up for the selected incident. Show me the proposal before it is saved.",
+            "Plan a 3-stop Friday evening itinerary around Tanjong Pagar (Dinner, Dessert, Drinks) with walking times and draw an itinerary_card.",
+        },
+        {
+          title: "Suggest late night drinks & mocktails",
+          message:
+            "Recommend 2 cozy cocktail spots near Chinatown with non-alcoholic craft options and good vibes for conversation.",
         },
       ],
       available: "before-first-message",
@@ -49,93 +104,328 @@ export default function Home() {
         selectIncident={selectIncident}
         workplace={workplace}
       />
-      <main className="ck-workspace">
-        <header className="ck-workspace-header">
-          <div>
-            <p className="ck-eyebrow">Agents, everywhere · Web example</p>
-            <h1>Incident assistant</h1>
-            <p className="ck-intro">
-              Pick an incident. Ask your assistant. Review a follow-up.
-            </p>
+
+      <div className="roam-shell">
+        {/* Top Product Navigation Bar */}
+        <header className="roam-navbar">
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, #2563eb 0%, #10b981 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontSize: "1.1rem",
+                boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+              }}
+            >
+              🧭
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontWeight: 800, fontSize: "1.15rem", letterSpacing: "-0.025em", color: "#0f172a" }}>
+                  Project Roam
+                </span>
+                <span
+                  style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    padding: "2px 8px",
+                    borderRadius: "999px",
+                    background: "rgba(16, 185, 129, 0.12)",
+                    color: "#059669",
+                    border: "1px solid rgba(16, 185, 129, 0.25)",
+                  }}
+                >
+                  Group Concierge
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
+                Multiplayer Context Arbitration &amp; Multimodal Concierge
+              </p>
+            </div>
           </div>
-          <span className="ck-tag">Sample data</span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* Location Pill */}
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                background: "#f1f5f9",
+                border: "1px solid #e2e8f0",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#334155",
+              }}
+            >
+              <span>🇸🇬</span>
+              <span>Singapore (Tanjong Pagar)</span>
+            </div>
+
+            {/* Voice Mode Button */}
+            <Link
+              href="/voice"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#0f172a",
+                color: "#ffffff",
+                padding: "7px 14px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: 600,
+                textDecoration: "none",
+                boxShadow: "0 2px 6px rgba(15, 23, 42, 0.2)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  background: "#10b981",
+                  boxShadow: "0 0 0 2px rgba(16, 185, 129, 0.3)",
+                }}
+              />
+              🎙️ Voice Mode (WebRTC)
+            </Link>
+          </div>
         </header>
 
-        <div className="ck-workspace-grid">
-          <section className="ck-panel" aria-labelledby="incident-title">
-            <div className="ck-incident-picker">
-              <label htmlFor="incident-select">Incident</label>
-              <select
-                id="incident-select"
-                value={selectedId}
-                onChange={(event) => selectIncident(event.target.value)}
-              >
-                {incidents.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.id} · {item.service}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Dual-Pane Product Workspace */}
+        <div className="roam-layout">
+          {/* Left Pane: Interactive Group Context Canvas */}
+          <GroupCanvas
+            attachedImage={attachedImage}
+            onAttachImage={(img) => {
+              setAttachedImage(img);
+              setVisionResult(null);
+              setVisionError(null);
+            }}
+            analyzingImage={analyzingImage}
+            visionResult={visionResult}
+            visionError={visionError}
+            onAnalyzeVision={handleAnalyzeVision}
+            workplace={workplace}
+            showWorkplace={showWorkplace}
+            onToggleWorkplace={() => setShowWorkplace((prev) => !prev)}
+          />
 
-            <div className="ck-detail">
-              <span className="ck-status-label">{incident.status}</span>
-              <h2 id="incident-title">{incident.title}</h2>
-              <p>{incident.summary}</p>
-              <details className="ck-more" key={incident.id}>
-                <summary>Details &amp; timeline</summary>
-                <dl className="ck-detail-facts">
-                  <div>
-                    <dt>Incident lead</dt>
-                    <dd>{incident.owner}</dd>
-                  </div>
-                  <div>
-                    <dt>Severity</dt>
-                    <dd>{incident.severity}</dd>
-                  </div>
-                  <div>
-                    <dt>Last update</dt>
-                    <dd>{incident.updated}</dd>
-                  </div>
-                </dl>
-                <h3>Impact</h3>
-                <p>{incident.impact}</p>
-                <h3>Timeline</h3>
-                <ol className="ck-timeline">
-                  {incident.timeline.map((event) => (
-                    <li key={event.time}>
-                      <time>{event.time} UTC</time>
-                      <div>
-                        <strong>{event.author}</strong>
-                        <p>{event.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            </div>
-
-            <WorkplaceFollowups incidentId={selectedId} workplace={workplace} />
-          </section>
-
-          <section
-            className="ck-panel ck-assistant"
-            aria-labelledby="assistant-title"
-          >
-            <header className="ck-assistant-header">
-              <h2 id="assistant-title">Ask assistant</h2>
-              <p>It can read this incident and prepare follow-ups.</p>
-            </header>
-            <CopilotChat
-              className="ck-chat"
-              labels={{
-                welcomeMessageText: "What needs attention?",
-                chatInputPlaceholder: "Ask about this incident…",
+          {/* Right Pane: AI Concierge & Generative UI Feed */}
+          <main className="roam-chat-panel" aria-label="AI Concierge & Chat">
+            {/* Top Bar of Chat Panel */}
+            <div
+              style={{
+                padding: "12px 24px",
+                borderBottom: "1px solid #e2e8f0",
+                background: "#ffffff",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
-            />
-          </section>
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: "#10b981",
+                    boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
+                  }}
+                />
+                <div>
+                  <span style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a" }}>
+                    Roam Concierge
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#64748b", marginLeft: "8px" }}>
+                    Multiplayer Context · Exa Places Grounding · Google Calendar
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                  💡 Drag images or press <strong>Cmd+V</strong> to attach
+                </span>
+              </div>
+            </div>
+
+            {/* Floating Ambiguous Action Approval Banner if action is proposed */}
+            {workplace.proposal && (
+              <div
+                style={{
+                  margin: "16px 24px 0",
+                  background: "#ffffff",
+                  border: "2px solid #2563eb",
+                  borderRadius: "14px",
+                  padding: "16px 20px",
+                  boxShadow: "0 10px 25px rgba(37, 99, 235, 0.15)",
+                  zIndex: 20,
+                  animation: "fadeIn 0.2s ease",
+                }}
+                aria-label="Approve Ambiguous task"
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      background: "#eff6ff",
+                      color: "#2563eb",
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      border: "1px solid #bfdbfe",
+                    }}
+                  >
+                    ⚡ Action Approval Required
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#64748b" }}>
+                    Workspace: <code>{workplace.proposal.workspaceId}</code> · Expires{" "}
+                    {new Date(workplace.proposal.expiresAt).toLocaleTimeString()}
+                  </span>
+                </div>
+
+                <h3 style={{ margin: "4px 0 6px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>
+                  {workplace.proposal.title}
+                </h3>
+                <p
+                  style={{
+                    margin: "0 0 12px",
+                    fontSize: "0.82rem",
+                    color: "#334155",
+                    whiteSpace: "pre-wrap",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {workplace.proposal.description}
+                </p>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    disabled={workplace.busy}
+                    onClick={workplace.approve}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "12.5px",
+                      cursor: workplace.busy ? "not-allowed" : "pointer",
+                      boxShadow: "0 2px 6px rgba(37, 99, 235, 0.3)",
+                    }}
+                  >
+                    {workplace.busy ? "Saving to Ambiguous…" : "✓ Approve & Save to Ambiguous"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={workplace.busy}
+                    onClick={workplace.deny}
+                    style={{
+                      background: "#f1f5f9",
+                      color: "#475569",
+                      border: "1px solid #cbd5e1",
+                      padding: "8px 14px",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      fontSize: "12.5px",
+                      cursor: workplace.busy ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Success Notice */}
+            {workplace.notice && (
+              <div
+                style={{
+                  margin: "12px 24px 0",
+                  background: "#f0fdf4",
+                  border: "1px solid #86efac",
+                  color: "#166534",
+                  padding: "10px 16px",
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                }}
+              >
+                ✓ {workplace.notice}
+              </div>
+            )}
+
+            {/* Ambiguous Memory Drawer if opened */}
+            {showWorkplace && (
+              <div
+                style={{
+                  margin: "16px 24px 0",
+                  background: "#ffffff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <h3 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 700, color: "#0f172a" }}>
+                    💼 Ambiguous Workspace Context &amp; Follow-ups
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowWorkplace(false)}
+                    style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "12px" }}
+                  >
+                    ✕ Close
+                  </button>
+                </div>
+                <WorkplaceFollowups incidentId={selectedId} workplace={workplace} />
+              </div>
+            )}
+
+            {/* Embedded CopilotChat UI */}
+            <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+              <CopilotChat
+                className="ck-chat"
+                labels={{
+                  welcomeMessageText:
+                    "Hey there! I'm Roam, your multiplayer concierge for Singapore. I have Sathish's pure veg preference (<$20) and Ramesh's BBQ & craft beer preference (<$35) pinned on the left. Tell me what vibe you're after, attach a flyer/menu, or ask for a consensus pick!",
+                  chatInputPlaceholder: "Ask Roam for consensus picks, itineraries, or drag & drop a menu…",
+                }}
+              />
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
     </>
   );
 }

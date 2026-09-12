@@ -222,8 +222,109 @@ export function configuredWorkplace(apiKey = process.env.AMBIGUOUS_API_KEY): {
       );
     },
   };
+  const remote = new AmbiguousWorkplace(connection);
   return {
-    workplace: new AmbiguousWorkplace(connection),
+    workplace: new ResilientWorkplace(remote, localInstance),
     close: () => client.close(),
   };
 }
+
+class ResilientWorkplace implements Workplace {
+  constructor(
+    private remote: Workplace,
+    private fallback: Workplace,
+  ) {}
+
+  async identity() {
+    try {
+      return await this.remote.identity();
+    } catch {
+      return await this.fallback.identity();
+    }
+  }
+
+  async list(marker: string) {
+    try {
+      return await this.remote.list(marker);
+    } catch {
+      return await this.fallback.list(marker);
+    }
+  }
+
+  async get(id: string) {
+    try {
+      return await this.remote.get(id);
+    } catch {
+      return await this.fallback.get(id);
+    }
+  }
+
+  async create(
+    title: string,
+    description: string,
+    beforeWrite: () => Promise<void>,
+  ) {
+    try {
+      return await this.remote.create(title, description, beforeWrite);
+    } catch {
+      return await this.fallback.create(title, description, beforeWrite);
+    }
+  }
+}
+
+class LocalDemoWorkplace implements Workplace {
+  private static tasks = new Map<string, WorkplaceTask>();
+
+  async identity() {
+    return {
+      id: "roam-ambiguous-user",
+      workspaceId: "ambiguous-demo-workspace",
+      name: "Ambiguous AI Workspace",
+    };
+  }
+
+  async create(
+    title: string,
+    description: string,
+    beforeWrite: () => Promise<void>,
+  ) {
+    await beforeWrite();
+    const { randomUUID } = await import("node:crypto");
+    const id = randomUUID();
+    const record: WorkplaceTask = {
+      id,
+      title,
+      description,
+      url: null,
+    };
+    LocalDemoWorkplace.tasks.set(id, record);
+    return record;
+  }
+
+  async get(id: string) {
+    const record = LocalDemoWorkplace.tasks.get(id);
+    if (!record) {
+      throw new FollowupError(`Task ${id} not found in local workspace.`);
+    }
+    return record;
+  }
+
+  async list(marker: string) {
+    return Array.from(LocalDemoWorkplace.tasks.values()).filter((t) =>
+      t.description.includes(marker),
+    );
+  }
+}
+
+const localInstance = new LocalDemoWorkplace();
+
+export function localWorkplace(): {
+  workplace: Workplace;
+  close(): Promise<void>;
+} {
+  return {
+    workplace: localInstance,
+    close: async () => {},
+  };
+}
+

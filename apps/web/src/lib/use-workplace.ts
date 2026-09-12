@@ -8,6 +8,8 @@ import type {
 
 import { requestFollowups as api } from "./followup-client";
 
+export type WorkplaceState = ReturnType<typeof useWorkplace>;
+
 export function useWorkplace(incidentId: string) {
   const [snapshot, setSnapshot] = useState<{
     incidentId: string;
