@@ -28,15 +28,22 @@ import { z } from "zod";
  */
 export const readThread = defineChannelTool({
   name: "read_thread",
-  description:
-    "Read the recent messages in this conversation. Call this FIRST on any incident question — the thread almost certainly already says what broke, when, and what has been tried. Asking someone to re-explain an outage is the worst thing you can do here.",
+  description: "Read recent messages in this conversation (last 15). Call to recall group members, past decisions, or prior context.",
   parameters: z.object({}),
   async handler(_args, { thread }) {
-    const messages = await thread.getMessages();
-    if (messages.length === 0) {
-      return "This surface does not expose conversation history, or the thread is empty. Say that you cannot see earlier messages and ask for the shortest possible summary.";
+    const all = await thread.getMessages();
+    if (all.length === 0) {
+      return "Thread is empty or history is unavailable. Ask for a brief summary.";
     }
-    return messages;
+    // Return only the last 15 messages, each truncated to 300 chars to keep
+    // the tool result well within the context window.
+    const recent = all.slice(-15).map((m: any) => ({
+      role: m.role,
+      text: typeof m.content === "string"
+        ? m.content.slice(0, 300)
+        : JSON.stringify(m.content).slice(0, 300),
+    }));
+    return recent;
   },
 });
 

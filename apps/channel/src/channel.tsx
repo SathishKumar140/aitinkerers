@@ -106,8 +106,6 @@ channel.onMention(async ({ thread, message }) => {
       : undefined;
     await thread.runAgent({
       prompt,
-      transcript: true,
-      memory: { user: "read-write", project: "read-write" },
     });
     console.log(`✓ [SLACK EVENT] Agent finished reply for conv ${thread.conversationKey}\n`);
 
@@ -115,26 +113,20 @@ channel.onMention(async ({ thread, message }) => {
     const { isTravel, isOuting, isBill, hasImages } = detectIntent(message?.text || "", message?.contentParts);
 
     if (hasImages || (isBill && !isTravel && !isOuting)) {
-      await thread.post(
-        <Message accent="#2E7D5B">
-          <Section>
-            <Markdown>**Receipt detected! Let's settle up 💸**</Markdown>
-          </Section>
-          <Actions>
-            <Button
-              value="extract_bill"
-              style="primary"
-              onClick={async ({ thread }) => {
-                await thread.runAgent({
-                  prompt: "Extract all items, taxes, tips, and totals from the uploaded receipt image and generate a bill_split_card.",
-                });
-              }}
-            >
-              🧾 Extract &amp; split bill
-            </Button>
-          </Actions>
-        </Message>,
-      );
+      await thread.runAgent({
+        prompt: [
+          {
+            type: "text" as const,
+            text:
+              "An image was just shared in this thread. If it shows a receipt, bill, or restaurant check: " +
+              "1) Call read_thread to recall the group members from earlier in the conversation. " +
+              "2) Extract every line item, subtotal, tax, and total from the image. " +
+              "3) Call bill_split_card with the full breakdown and an equal settlement plan. " +
+              "If it is NOT a bill image, describe what is in the image and respond naturally.",
+          },
+          ...( message.contentParts ?? []),
+        ],
+      });
     } else if (isTravel && !isBill) {
       await thread.post(
         <Message accent="#1E3A5F">
@@ -157,7 +149,7 @@ channel.onMention(async ({ thread, message }) => {
               value="plan_split"
               onClick={async ({ thread }) => {
                 await thread.runAgent({
-                  prompt: "Based on the trip budget discussed, create a bill_split_card showing how costs split equally among the travelers.",
+                  prompt: "Based on the trip budget discussed, call read_thread to recall the travelers, then create a bill_split_card showing how costs split equally.",
                 });
               }}
             >
@@ -198,7 +190,7 @@ channel.onMention(async ({ thread, message }) => {
               value="split_dinner"
               onClick={async ({ thread }) => {
                 await thread.runAgent({
-                  prompt: "Split the dinner bill equally among the group using bill_split_card.",
+                  prompt: "Call read_thread to recall who the group members are, then split the dinner bill equally using bill_split_card.",
                 });
               }}
             >
@@ -229,8 +221,6 @@ channel.onMessage(async ({ thread, message }) => {
         : undefined;
       await thread.runAgent({
         prompt,
-        transcript: true,
-        memory: { user: "read-write", project: "read-write" },
       });
       console.log(`✓ [SLACK EVENT] Agent finished following up on conv ${thread.conversationKey}\n`);
     } catch (err) {
