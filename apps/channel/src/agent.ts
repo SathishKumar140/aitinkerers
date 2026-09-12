@@ -6,6 +6,49 @@ import { Observable, type Subscription } from "rxjs";
 type ChannelAgentFactory = (threadId: string) => AbstractAgent;
 
 /**
+ * Defensively repairs conversation messages so that any tool calls from prior turns
+ * or aborted tool executions always have matching tool-result messages.
+ * This prevents Vercel AI SDK's `MissingToolResultsError` when converting prompt messages.
+ */
+export function sanitizeMessages(messages: any[]): any[] {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+
+  const answeredToolCallIds = new Set<string>();
+  for (const m of messages) {
+    if (m.role === "tool") {
+      if (m.toolCallId) answeredToolCallIds.add(m.toolCallId);
+      if (Array.isArray(m.content)) {
+        for (const part of m.content) {
+          if (part && typeof part === "object" && part.toolCallId) {
+            answeredToolCallIds.add(part.toolCallId);
+          }
+        }
+      }
+    }
+  }
+
+  const repaired: any[] = [];
+  for (const m of messages) {
+    repaired.push(m);
+    if (m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
+      for (const tc of m.toolCalls) {
+        if (tc?.id && !answeredToolCallIds.has(tc.id)) {
+          repaired.push({
+            id: `${tc.id}-recovered-result`,
+            role: "tool",
+            toolCallId: tc.id,
+            content: JSON.stringify({ status: "rendered" }),
+          });
+          answeredToolCallIds.add(tc.id);
+        }
+      }
+    }
+  }
+
+  return repaired;
+}
+
+/**
  * Channel-only facade that keeps AG-UI transcript/state on the outer agent while
  * delegating each low-level run to a fresh BuiltInAgent instance.
  *
@@ -27,7 +70,7 @@ export class ChannelRunAgent extends AbstractAgent {
     this.state = {
       currentPlan: null,
       consensus: null,
-      members: [],
+      members: ["Ramesh Vishnoi", "Sathish Kumar"],
     };
   }
 
@@ -43,10 +86,16 @@ export class ChannelRunAgent extends AbstractAgent {
       };
 
       try {
+        this.messages = sanitizeMessages(this.messages);
+        const sanitizedInput: RunAgentInput = {
+          ...input,
+          messages: sanitizeMessages(input.messages),
+        };
+
         inner = this.agentFactory(input.threadId);
         inner.threadId = input.threadId;
         this.activeInner = inner;
-        subscription = inner.run(input).subscribe({
+        subscription = inner.run(sanitizedInput).subscribe({
           next: (event) => {
             subscriber.next(event);
           },
@@ -86,5 +135,5 @@ export class ChannelRunAgent extends AbstractAgent {
 }
 
 export function makeChannelAgent(threadId: string) {
-  return new ChannelRunAgent(makeAgent, threadId);
+  return new ChannelRunAgent((id) => makeAgent(id, { maxSteps: 1 }), threadId);
 }

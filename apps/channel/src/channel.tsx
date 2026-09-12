@@ -62,12 +62,23 @@ export const channel = createChannel({
         "When users upload images of receipts, menus, or bills, inspect the image content parts using vision to extract items, amounts, and participants, then render a bill_split_card.",
     },
     {
-      description: "Cross-skill flow",
+      description: "Cross-skill flow & Immediate Action",
       value:
-        "When a user mentions a trip but does NOT provide specific dates, you MUST ask for the dates before generating the travel plan card. " +
-        "After producing a travel_plan_card, proactively ask if the group would like to plan a bill split for the trip costs. " +
-        "After producing a consensus_card for a dining outing, ask if they want to split the bill using bill_split_card. " +
-        "Keep follow-up questions brief — one question at a time.",
+        "When destination, dates, or approximate budget are provided, IMMEDIATELY call `travel_plan_card`, `itinerary_card`, and `flight_hotel_card`! " +
+        "NEVER ask repetitive or already-confirmed questions (like re-asking budget, per-person vs total, or flight preferences). " +
+        "NEVER withhold cards with phrases like 'Confirm one last detail so I can render proper cards next'. Render cards immediately with sensible defaults.",
+    },
+    {
+      description: "Group Context & Channel Members",
+      value:
+        "This Slack channel (#outing) is a multiplayer group workspace with members: Ramesh Vishnoi (Ramesh) and Sathish Kumar. " +
+        "When an individual member (e.g. Ramesh) asks for a trip plan, travel itinerary, dining recommendation, or bill split, the plan is for the ENTIRE GROUP (all channel members: Ramesh and Sathish Kumar). " +
+        "In `travel_plan_card`, ALWAYS set `travelers` to include all group members (['Ramesh', 'Sathish Kumar']) unless a solo trip is explicitly requested. Do not choose only the requester as the traveler.",
+    },
+    {
+      description: "Slack File Attachments",
+      value:
+        "Slack IDs starting with 'F' (e.g. 'F0C1GFRQPA8') represent uploaded receipt/menu file attachments, NOT user IDs. When an 'F...' token or image is received, treat it as an uploaded receipt image to extract items and generate a bill_split_card.",
     },
     ...(isWorkplaceConfigured()
       ? [{ description: "Workplace", value: WORKPLACE_CONTEXT }]
@@ -84,11 +95,13 @@ export const channel = createChannel({
 /** Detect rough intent from the raw message text and content parts. */
 function detectIntent(text: string, contentParts?: any[]) {
   const t = text.toLowerCase();
-  const hasImages = contentParts?.some((p: any) => p.type === "image" || p.image);
+  const raw = text.trim();
+  const isSlackFileId = /^F[A-Z0-9]{8,12}$/i.test(raw);
+  const hasImages = contentParts?.some((p: any) => p.type === "image" || p.image) || isSlackFileId || /\.(png|jpe?g|webp|gif)\b/i.test(t);
   const isTravel = /\b(trip|travel|fly|flight|hotel|itinerary|visit|tokyo|bali|paris|london|bangkok|holiday|vacation|days?)\b/.test(t);
   const isOuting = /\b(dinner|lunch|restaurant|outing|eat|dine|food|venue|cafe|drinks?)\b/.test(t);
   const isBill = /\b(split|bill|pay|paid|cost|expense|share|sgd|\$)\b/.test(t) || hasImages;
-  return { isTravel, isOuting, isBill, hasImages };
+  return { isTravel, isOuting, isBill, hasImages, isSlackFileId };
 }
 
 // A mention subscribes the conversation, so the agent then follows along instead
@@ -97,108 +110,114 @@ channel.onMention(async ({ thread, message }) => {
   console.log(`\n👉 [SLACK EVENT] @-mention received: "${message?.text || ""}" (conv: ${thread.conversationKey})`);
   try {
     await thread.subscribe();
+    const { isTravel, isOuting, isBill, hasImages, isSlackFileId } = detectIntent(message?.text || "", message?.contentParts);
+
     // Forward message text + image content parts so the model can see attachments.
-    const prompt = message?.contentParts?.length
+    let prompt: any = message?.contentParts?.length
       ? [
           ...(message.text ? [{ type: "text" as const, text: message.text }] : []),
           ...message.contentParts,
         ]
       : undefined;
-    await thread.runAgent({
-      prompt,
-    });
+    if (isSlackFileId && !prompt) {
+      prompt = `[Receipt image attached with Slack File ID ${message?.text?.trim()}]: Extract all items, taxes, tips, and totals from this uploaded receipt image and generate a bill_split_card.`;
+    }
+
+    await thread.runAgent(prompt ? { prompt } : undefined);
     console.log(`✓ [SLACK EVENT] Agent finished reply for conv ${thread.conversationKey}\n`);
 
     // Post a cross-skill follow-up card based on detected intent and vision.
-    const { isTravel, isOuting, isBill, hasImages } = detectIntent(message?.text || "", message?.contentParts);
-
-    if (hasImages || (isBill && !isTravel && !isOuting)) {
-      await thread.runAgent({
-        prompt: [
-          {
-            type: "text" as const,
-            text:
-              "An image was just shared in this thread. If it shows a receipt, bill, or restaurant check: " +
-              "1) Call read_thread to recall the group members from earlier in the conversation. " +
-              "2) Extract every line item, subtotal, tax, and total from the image. " +
-              "3) Call bill_split_card with the full breakdown and an equal settlement plan. " +
-              "If it is NOT a bill image, describe what is in the image and respond naturally.",
-          },
-          ...( message.contentParts ?? []),
-        ],
-      });
-    } else if (isTravel && !isBill) {
-      await thread.post(
-        <Message accent="#1E3A5F">
-          <Section>
-            <Markdown>**A few things to complete your trip plan ✈️**</Markdown>
-          </Section>
-          <Actions>
-            <Button
-              value="ask_dates"
-              style="primary"
-              onClick={async ({ thread }) => {
-                await thread.runAgent({
-                  prompt: "Ask the group for specific travel dates — what exact dates are they planning? Confirm and update the itinerary.",
-                });
-              }}
-            >
-              📅 Set exact dates
-            </Button>
-            <Button
-              value="plan_split"
-              onClick={async ({ thread }) => {
-                await thread.runAgent({
-                  prompt: "Based on the trip budget discussed, call read_thread to recall the travelers, then create a bill_split_card showing how costs split equally.",
-                });
-              }}
-            >
-              💸 Plan the bill split
-            </Button>
-            <Button
-              value="find_flights"
-              onClick={async ({ thread }) => {
-                await thread.runAgent({
-                  prompt: "Find flight and hotel options for this trip and render a flight_hotel_card.",
-                });
-              }}
-            >
-              ✈️ Flights &amp; hotels
-            </Button>
-          </Actions>
-        </Message>,
-      );
-    } else if (isOuting && !isBill) {
-      await thread.post(
-        <Message accent="#2E7D5B">
-          <Section>
-            <Markdown>**Happy to help wrap this up 🍽️**</Markdown>
-          </Section>
-          <Actions>
-            <Button
-              value="book_cal"
-              style="primary"
-              onClick={async ({ thread }) => {
-                await thread.runAgent({
-                  prompt: "Create a Google Calendar event for the outing using create_calendar_event.",
-                });
-              }}
-            >
-              📅 Add to calendar
-            </Button>
-            <Button
-              value="split_dinner"
-              onClick={async ({ thread }) => {
-                await thread.runAgent({
-                  prompt: "Call read_thread to recall who the group members are, then split the dinner bill equally using bill_split_card.",
-                });
-              }}
-            >
-              💸 Split the bill
-            </Button>
-          </Actions>
-        </Message>,
-      );
+    try {
+      if (hasImages || isSlackFileId || (isBill && !isTravel && !isOuting)) {
+        await thread.runAgent({
+          prompt: [
+            {
+              type: "text" as const,
+              text:
+                "An image was just shared in this thread. If it shows a receipt, bill, or restaurant check: " +
+                "1) Call read_thread to recall the group members from earlier in the conversation. " +
+                "2) Extract every line item, subtotal, tax, and total from the image. " +
+                "3) Call bill_split_card with the full breakdown and an equal settlement plan. " +
+                "If it is NOT a bill image, describe what is in the image and respond naturally.",
+            },
+            ...(message.contentParts ?? []),
+          ],
+        });
+      } else if (isTravel && !isBill) {
+        await thread.post(
+          <Message accent="#1E3A5F">
+            <Section>
+              <Markdown>**A few things to complete your trip plan ✈️**</Markdown>
+            </Section>
+            <Actions>
+              <Button
+                value="ask_dates"
+                style="primary"
+                onClick={async ({ thread }) => {
+                  await thread.runAgent({
+                    prompt: "Ask the group for specific travel dates — what exact dates are they planning? Confirm and update the itinerary.",
+                  });
+                }}
+              >
+                📅 Set exact dates
+              </Button>
+              <Button
+                value="plan_split"
+                onClick={async ({ thread }) => {
+                  await thread.runAgent({
+                    prompt: "Based on the trip budget discussed, call read_thread to recall the travelers, then create a bill_split_card showing how costs split equally.",
+                  });
+                }}
+              >
+                💸 Plan the bill split
+              </Button>
+              <Button
+                value="find_flights"
+                onClick={async ({ thread }) => {
+                  await thread.runAgent({
+                    prompt: "Find flight and hotel options for this trip and render a flight_hotel_card.",
+                  });
+                }}
+              >
+                ✈️ Flights &amp; hotels
+              </Button>
+            </Actions>
+          </Message>,
+        );
+      } else if (isOuting && !isBill) {
+        await thread.post(
+          <Message accent="#2E7D5B">
+            <Section>
+              <Markdown>**Happy to help wrap this up 🍽️**</Markdown>
+            </Section>
+            <Actions>
+              <Button
+                value="book_cal"
+                style="primary"
+                onClick={async ({ thread }) => {
+                  await thread.runAgent({
+                    prompt: "Create a Google Calendar event for the outing using create_calendar_event.",
+                  });
+                }}
+              >
+                📅 Add to calendar
+              </Button>
+              <Button
+                value="split_dinner"
+                onClick={async ({ thread }) => {
+                  await thread.runAgent({
+                    prompt: "Call read_thread to recall who the group members are, then split the dinner bill equally using bill_split_card.",
+                  });
+                }}
+              >
+                💸 Split the bill
+              </Button>
+            </Actions>
+          </Message>,
+        );
+      }
+    } catch (cardErr) {
+      console.warn("Follow-up card could not be posted:", cardErr);
     }
   } catch (err) {
     console.error(`❌ [SLACK EVENT] Agent error on mention (conv: ${thread.conversationKey}):`, err);
@@ -208,6 +227,12 @@ channel.onMention(async ({ thread, message }) => {
 // Non-mentioned turns only ever reach onMessage — gate them on the flag or the
 // agent will answer every message in every channel it has been invited to.
 channel.onMessage(async ({ thread, message }) => {
+  const text = message?.text?.trim() || "";
+  if (!text || text === "This message was deleted." || text.startsWith("pinned a message")) {
+    console.log(`👉 [SLACK EVENT] Ignoring deleted/system message: "${text}"`);
+    return;
+  }
+
   const subscribed = await thread.isSubscribed();
   console.log(`👉 [SLACK EVENT] Message received: "${message?.text || ""}" (subscribed: ${subscribed})`);
   if (subscribed) {
@@ -219,9 +244,7 @@ channel.onMessage(async ({ thread, message }) => {
             ...message.contentParts,
           ]
         : undefined;
-      await thread.runAgent({
-        prompt,
-      });
+      await thread.runAgent(prompt ? { prompt } : undefined);
       console.log(`✓ [SLACK EVENT] Agent finished following up on conv ${thread.conversationKey}\n`);
     } catch (err) {
       console.error(`❌ [SLACK EVENT] Agent error on message (conv: ${thread.conversationKey}):`, err);

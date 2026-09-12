@@ -26,6 +26,8 @@ export type AgentFactoryOptions = {
   /** Override the model resolved from env — useful when a surface (e.g. Slack)
    * needs a faster/cheaper model than the web app. */
   model?: string;
+  /** Override maxSteps for the BuiltInAgent loop (defaults to 10 for web/standalone, 1 for channels). */
+  maxSteps?: number;
 };
 
 export function makeAgent(threadId: string, options: AgentFactoryOptions = {}) {
@@ -33,10 +35,9 @@ export function makeAgent(threadId: string, options: AgentFactoryOptions = {}) {
     model: options.model ?? resolveModel(),
     prompt: options.prompt ?? SYSTEM_PROMPT,
 
-    // NOT optional in practice. maxSteps defaults to 1, which means the agent
-    // can call one tool and then stops — before it ever sees the result. Any
-    // agent with tools needs room to loop.
-    maxSteps: 10,
+    // maxSteps defaults to 10 for standalone/web where BuiltInAgent loops,
+    // or can be overridden to 1 for Channels where runAgentLoop controls iterations.
+    maxSteps: options.maxSteps ?? 10,
 
     // The workplace, when one is configured. Empty array when it is not, so the
     // agent is never handed tools that would 401. Add your own MCP servers here
@@ -48,7 +49,7 @@ export function makeAgent(threadId: string, options: AgentFactoryOptions = {}) {
   agent.state = {
     currentPlan: null,
     consensus: null,
-    members: [],
+    members: ["Ramesh Vishnoi", "Sathish Kumar"],
   };
   return agent;
 }

@@ -1,12 +1,24 @@
-# Slack thread agent
+# Roam — Slack Group Planning Agent
 
 **OpenAI + CopilotKit Channels + Exa**
 
-Build an agent that reads an existing conversation, researches what matters, and replies in the same Slack thread with native cards and source links. Try a team research discussion, support handoff, project decision, or incident review. The included incident scenario shows how the infrastructure fits together; replace it with your own workflow.
+**Roam** is an autonomous group planning and arbitration assistant that lives directly inside Slack channels and threads. It reads conversation dynamics, balances member preferences, designs itineraries with Google Calendar integration, and splits expenses using vision-based receipt/ticket extraction.
 
-[![Slack thread agent demo](../../assets/demos/slack.gif)](../../assets/demos/slack.mp4)
+---
 
-_Scroll through a completed Slack thread: incident context, Exa source cards, and the final answer. The preview is sped up; click it for the full MP4._
+## 📸 Live Roam Screenshots
+
+### 1. ✈️ Multi-Day Travel Planning & Native Itinerary Cards
+Mentioning `@roam` with destination and group constraints immediately generates a customized multi-day travel card with group members, budget estimations, and an interactive itinerary table with one-click Google Calendar scheduling:
+
+![Roam 3-Day Osaka Trip Itinerary Card in Slack](../../assets/screenshots/roam-travel-itinerary.png)
+
+### 2. 💸 Multimodal Ticket & Receipt Bill Splitting
+Uploading an e-ticket, invoice, or receipt image in Slack triggers vision inspection. Roam extracts line items, totals, and currency (e.g. AED), computing fair per-person splits and settlement instructions directly in thread:
+
+![Roam Multimodal Ticket Bill Split in Slack](../../assets/screenshots/roam-ticket-billsplit.png)
+
+---
 
 ## Get started
 
