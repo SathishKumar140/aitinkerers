@@ -30,7 +30,16 @@ function HomeContent() {
   const selectIncident = (id: string) => setSelectedId(id);
   const [showSettings, setShowSettings] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { members, settings, setIsConfigModalOpen, promptSummary } = useGroup();
+  const {
+    members,
+    settings,
+    travelSettings,
+    billSplitSettings,
+    activeRecipe,
+    setActiveRecipe,
+    setIsConfigModalOpen,
+    promptSummary,
+  } = useGroup();
 
   // Vision screenshot state
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
@@ -85,29 +94,70 @@ function HomeContent() {
     }
   };
 
+  const recipeSuggestions =
+    activeRecipe === "travel"
+      ? [
+          {
+            title: "✈️ Plan 4-Day Tokyo Trip with Flights & Hotels",
+            message: `Plan a 4-day group trip to Tokyo for our group: ${promptSummary}. Recommend direct flights from Singapore with airlines & prices, top 4-star hotels near transit, and draw a travel_plan_card with a 1-click Google Calendar schedule.`,
+          },
+          {
+            title: "🏨 Curate Quiet 4-Star Stays with Rooftop Lounges",
+            message: `Find 2 top-rated hotels in Tokyo for our group with quiet rooms, easy transit access, and rooftop lounges. Draw a flight_hotel_card.`,
+          },
+          {
+            title: "📅 Schedule Trip Itinerary to Google Calendar",
+            message: `Create a comprehensive day-by-day itinerary for our Tokyo trip and schedule all flight segments and key activities directly to Google Calendar.`,
+          },
+          {
+            title: "🔔 Generate Flight Status & Check-In Alert",
+            message: `Generate a travel notification alert for Singapore Airlines flight SQ638 check-in and luggage advisory. Draw a travel_alert_card.`,
+          },
+        ]
+      : activeRecipe === "bill_split"
+      ? [
+          {
+            title: "💸 Split Team Dinner Bill ($145 SGD by Ramesh)",
+            message: `Split our team dinner bill of $145.00 SGD paid by Ramesh among: Sathish ($45 for vegetarian dishes), Alice ($40 for vegan bowl & drink), and Ramesh ($60 for smoked ribs & craft beer). Calculate the exact settlement matrix and draw a bill_split_card.`,
+          },
+          {
+            title: "⚖️ Calculate 'Who Owes Whom' Settlements",
+            message: `Given our group expenses for: ${promptSummary}, compute the debt settlement resolution showing the minimum number of PayNow transfers to settle up. Draw a bill_split_card.`,
+          },
+          {
+            title: "🧾 Split Trip Lodging & Car Rental ($850)",
+            message: `We incurred $600 for villa rental and $250 for car rental on our trip. Split equally among 3 travelers and show who needs to reimburse the payer.`,
+          },
+          {
+            title: "✓ Mark All Group Debts as Settled",
+            message: `Confirm that all outstanding balances for our dinner and drinks have been paid via PayNow and mark the bill as settled.`,
+          },
+        ]
+      : [
+          {
+            title: "🎯 Find Consensus Dinner Spot",
+            message: `Find our best consensus dinner spot in ${settings.neighborhood} for our group: ${promptSummary}. Ensure zero compromise on dietary restrictions. Draw a consensus_card with match scores, Google Maps link, and Google Calendar button.`,
+          },
+          {
+            title: "🗺️ Plan 3-Stop Evening Itinerary",
+            message: `Plan a 3-stop Friday evening itinerary around ${settings.neighborhood} (Dinner, Dessert, Drinks) with walking transit times for: ${promptSummary}. Draw an itinerary_card.`,
+          },
+          {
+            title: "🍸 Late Night Mocktails & Drinks",
+            message: `Recommend 2 cozy cocktail & mocktail spots near ${settings.neighborhood} with great atmosphere and craft non-alcoholic choices.`,
+          },
+          {
+            title: "📸 Scan & Arbitrate Attached Menu",
+            message: `Inspect the attached menu image to verify if every group member (${promptSummary}) can eat safely within budget.`,
+          },
+        ];
+
   useConfigureSuggestions(
     {
-      suggestions: [
-        {
-          title: "🎯 Find Consensus Dinner Spot",
-          message: `Find our best consensus dinner spot in ${settings.neighborhood} for our group: ${promptSummary}. Ensure zero compromise on dietary restrictions. Draw a consensus_card with match scores and maps link.`,
-        },
-        {
-          title: "🗺️ Plan 3-Stop Evening Itinerary",
-          message: `Plan a 3-stop Friday evening itinerary around ${settings.neighborhood} (Dinner, Dessert, Drinks) with walking transit times for: ${promptSummary}. Draw an itinerary_card.`,
-        },
-        {
-          title: "🍸 Late Night Mocktails & Drinks",
-          message: `Recommend 2 cozy cocktail & mocktail spots near ${settings.neighborhood} with great atmosphere and craft non-alcoholic choices.`,
-        },
-        {
-          title: "📸 Scan & Arbitrate Attached Menu",
-          message: `Inspect the attached menu image to verify if every group member (${promptSummary}) can eat safely within budget.`,
-        },
-      ],
+      suggestions: recipeSuggestions,
       available: "before-first-message",
     },
-    [promptSummary, settings.neighborhood],
+    [activeRecipe, promptSummary, settings.neighborhood, travelSettings.destination],
   );
 
   return (
@@ -122,7 +172,7 @@ function HomeContent() {
       <div className="roam-shell">
         {/* Top Product Navigation Bar */}
         <header className="roam-navbar">
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             {/* Sleek SVG Brand Mark */}
             <div
               style={{
@@ -163,17 +213,112 @@ function HomeContent() {
                     letterSpacing: "0.06em",
                     padding: "2px 8px",
                     borderRadius: "999px",
-                    background: "rgba(16, 185, 129, 0.12)",
-                    color: "#059669",
-                    border: "1px solid rgba(16, 185, 129, 0.25)",
+                    background:
+                      activeRecipe === "travel"
+                        ? "rgba(37, 99, 235, 0.12)"
+                        : activeRecipe === "bill_split"
+                        ? "rgba(16, 185, 129, 0.12)"
+                        : "rgba(217, 119, 6, 0.12)",
+                    color:
+                      activeRecipe === "travel"
+                        ? "#2563eb"
+                        : activeRecipe === "bill_split"
+                        ? "#059669"
+                        : "#d97706",
+                    border: "1px solid rgba(0,0,0,0.08)",
                   }}
                 >
-                  Social Concierge
+                  Multi-Recipe Assistant
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
-                Social dining &amp; outings, with zero compromise
+                Multiplayer Dining, Travel Planning &amp; Group Bill Splitting
               </p>
+            </div>
+
+            {/* Recipe / Skill Switcher Tabs */}
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                background: "#f1f5f9",
+                padding: "3px",
+                borderRadius: "10px",
+                marginLeft: "8px",
+                gap: "2px",
+                border: "1px solid #e2e8f0",
+              }}
+              role="tablist"
+              aria-label="Select Recipe"
+            >
+              <button
+                type="button"
+                onClick={() => setActiveRecipe("outing")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 11px",
+                  borderRadius: "7px",
+                  border: "none",
+                  background: activeRecipe === "outing" ? "#ffffff" : "transparent",
+                  color: activeRecipe === "outing" ? "#0f172a" : "#64748b",
+                  fontWeight: activeRecipe === "outing" ? 700 : 500,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  boxShadow: activeRecipe === "outing" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>🍽️</span>
+                <span>Outing</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveRecipe("travel")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 11px",
+                  borderRadius: "7px",
+                  border: "none",
+                  background: activeRecipe === "travel" ? "#ffffff" : "transparent",
+                  color: activeRecipe === "travel" ? "#2563eb" : "#64748b",
+                  fontWeight: activeRecipe === "travel" ? 700 : 500,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  boxShadow: activeRecipe === "travel" ? "0 1px 3px rgba(37,99,235,0.15)" : "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>✈️</span>
+                <span>Travel</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveRecipe("bill_split")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "5px 11px",
+                  borderRadius: "7px",
+                  border: "none",
+                  background: activeRecipe === "bill_split" ? "#ffffff" : "transparent",
+                  color: activeRecipe === "bill_split" ? "#059669" : "#64748b",
+                  fontWeight: activeRecipe === "bill_split" ? 700 : 500,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  boxShadow: activeRecipe === "bill_split" ? "0 1px 3px rgba(16,185,129,0.15)" : "none",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>💸</span>
+                <span>Bill Split</span>
+              </button>
             </div>
 
             {/* Configure Group & Constraints Button in Top Nav */}
@@ -192,7 +337,7 @@ function HomeContent() {
                 fontSize: "12px",
                 fontWeight: 700,
                 cursor: "pointer",
-                marginLeft: "8px",
+                marginLeft: "4px",
                 boxShadow: "0 1px 2px rgba(37, 99, 235, 0.1)",
                 transition: "all 0.15s ease",
               }}
@@ -227,6 +372,7 @@ function HomeContent() {
               <span>{isSidebarOpen ? "Hide Context" : "Show Context"}</span>
             </button>
           </div>
+
 
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {/* Location Pill */}
@@ -325,8 +471,8 @@ function HomeContent() {
             onToggleWorkplace={() => setShowSettings((prev) => !prev)}
           />
 
-          {/* Right Pane: AI Concierge & Generative UI Feed */}
-          <main className="roam-chat-panel" aria-label="AI Concierge & Chat">
+          {/* Right Pane: AI Assistant & Generative UI Feed */}
+          <main className="roam-chat-panel" aria-label="AI Assistant & Chat">
             {/* Top Bar of Chat Panel */}
             <div
               style={{
@@ -344,25 +490,46 @@ function HomeContent() {
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ fontWeight: 700, fontSize: "13.5px", color: "#0f172a" }}>
-                      Roam Concierge
+                      Roam AI
                     </span>
                     <span
                       style={{
                         fontSize: "10.5px",
-                        fontWeight: 600,
-                        color: "#059669",
-                        background: "#ecfdf5",
-                        padding: "1px 7px",
+                        fontWeight: 700,
+                        color:
+                          activeRecipe === "travel"
+                            ? "#2563eb"
+                            : activeRecipe === "bill_split"
+                            ? "#059669"
+                            : "#d97706",
+                        background:
+                          activeRecipe === "travel"
+                            ? "#eff6ff"
+                            : activeRecipe === "bill_split"
+                            ? "#ecfdf5"
+                            : "#fffbeb",
+                        padding: "2px 8px",
                         borderRadius: "999px",
-                        border: "1px solid #a7f3d0",
+                        border: `1px solid ${
+                          activeRecipe === "travel"
+                            ? "#bfdbfe"
+                            : activeRecipe === "bill_split"
+                            ? "#a7f3d0"
+                            : "#fde68a"
+                        }`,
                       }}
                     >
-                      Active
+                      {activeRecipe === "travel"
+                        ? "✈️ Skill: Travel Planner"
+                        : activeRecipe === "bill_split"
+                        ? "💸 Skill: Bill Splitter"
+                        : "🍽️ Skill: Outing & Dining"}
                     </span>
                   </div>
                   <span style={{ fontSize: "11px", color: "#64748b" }}>
-                    Social dining &amp; outings · Zero-compromise group arbitration
+                    Multiplayer Outings, Trip Planning &amp; Splitwise Group Settlements
                   </span>
+
                 </div>
               </div>
 
@@ -530,9 +697,15 @@ function HomeContent() {
                 className="ck-chat"
                 welcomeScreen={RoamWelcomeScreen}
                 labels={{
-                  chatInputPlaceholder: "Ask Roam for consensus picks, itineraries, or drag & drop a menu flyer…",
+                  chatInputPlaceholder:
+                    activeRecipe === "travel"
+                      ? "Ask Roam to plan a trip, compare flights/hotels, or schedule to Google Calendar…"
+                      : activeRecipe === "bill_split"
+                      ? "Ask Roam to split a group bill, itemize shares, or calculate settlements…"
+                      : "Ask Roam for consensus picks, itineraries, or drag & drop a menu flyer…",
                 }}
               />
+
             </div>
           </main>
         </div>

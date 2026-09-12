@@ -9,7 +9,7 @@
  * So anything a client component needs — the prompt, the model notes, the
  * schemas — lives here, and this module imports nothing from Node.
  */
-export { SYSTEM_PROMPT, SURFACE_RULES, ROAM_CONCIERGE_ROLE, ONCALL_ROLE } from "./prompt";
+export { SYSTEM_PROMPT, SURFACE_RULES, ROAM_ROLE, ROAM_CONCIERGE_ROLE, ONCALL_ROLE } from "./prompt";
 export { DEFAULT_MODEL, MODEL_NOTES } from "./model-meta";
 export {
   searchWebParameters,
@@ -23,5 +23,31 @@ export {
   type ConsensusCardData,
   calendarEventSchema,
   type CalendarEventData,
+  recipeTypeSchema,
+  type RecipeType,
+  travelPlanCardSchema,
+  type TravelPlanCardData,
+  flightRecommendationSchema,
+  type FlightRecommendation,
+  hotelRecommendationSchema,
+  type HotelRecommendation,
+  flightHotelCardSchema,
+  type FlightHotelCardData,
+  travelAlertCardSchema,
+  type TravelAlertCardData,
+  memberShareSchema,
+  type MemberShare,
+  settlementSchema,
+  type Settlement,
+  billSplitCardSchema,
+  type BillSplitCardData,
 } from "./schemas";
-export { buildGoogleCalendarUrl, formatGoogleCalendarDateTime } from "./calendar";
+export {
+  buildGoogleCalendarUrl,
+  buildGoogleCalendarTripUrl,
+  formatGoogleCalendarDateTime,
+  createGoogleCalendarEventDirect,
+  isGoogleCalendarConfigured,
+  type DirectCalendarResult,
+} from "./calendar";
+

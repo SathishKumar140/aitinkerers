@@ -1,4 +1,4 @@
-/** Sample group outing context and constraints for Project Roam Concierge. Follow-ups are retrieved separately from Ambiguous. */
+/** Sample group outing context and constraints for Project Roam. Follow-ups are retrieved separately from Ambiguous. */
 import type { WorkplaceTask } from "./followup-types";
 
 export interface ParticipantConstraint {

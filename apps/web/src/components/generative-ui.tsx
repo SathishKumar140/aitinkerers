@@ -21,7 +21,12 @@ import {
   ItineraryCard,
   IncidentCard,
   Timeline,
+  TravelPlanCard,
+  FlightHotelCard,
+  TravelAlertCard,
+  BillSplitCard,
 } from "./streamed-cards";
+
 
 export function GenerativeUI() {
   useComponent({
@@ -98,6 +103,107 @@ export function GenerativeUI() {
     }),
     render: Timeline,
   });
+
+  useComponent({
+    name: "travel_plan_card",
+    description:
+      "Draw a multi-day trip plan card with destination, dates, travelers, daily highlights, and 1-click Google Calendar button.",
+    parameters: z.object({
+      destination: z.string().describe("Destination city or country."),
+      title: z.string().describe("Trip title, e.g. 'Tokyo Autumn Discovery'."),
+      dates: z.string().describe("Travel dates or duration."),
+      travelers: z.array(z.string()).default([]),
+      estimatedBudget: z.string().optional(),
+      highlights: z.array(z.string()).min(1),
+      calendarUrl: z.string().url().optional(),
+      mapUrl: z.string().url().optional(),
+    }),
+    render: TravelPlanCard,
+  });
+
+  useComponent({
+    name: "flight_hotel_card",
+    description:
+      "Draw flight options and hotel recommendations with routes, times, ratings, and price tags.",
+    parameters: z.object({
+      destination: z.string(),
+      title: z.string(),
+      flights: z
+        .array(
+          z.object({
+            airline: z.string(),
+            flightNumber: z.string().optional(),
+            route: z.string(),
+            times: z.string(),
+            price: z.string(),
+            bookingUrl: z.string().url().optional(),
+          }),
+        )
+        .default([]),
+      hotels: z
+        .array(
+          z.object({
+            name: z.string(),
+            neighborhood: z.string(),
+            rating: z.string(),
+            pricePerNight: z.string(),
+            amenities: z.array(z.string()).default([]),
+            bookingUrl: z.string().url().optional(),
+          }),
+        )
+        .default([]),
+    }),
+    render: FlightHotelCard,
+  });
+
+  useComponent({
+    name: "travel_alert_card",
+    description:
+      "Draw a travel notification card for check-in reminders, flight alerts, weather advisories, or packing lists.",
+    parameters: z.object({
+      title: z.string(),
+      tripName: z.string(),
+      urgency: z.enum(["info", "warning", "critical"]).default("info"),
+      category: z.enum(["flight", "checkin", "weather", "packing", "reminder"]).default("reminder"),
+      message: z.string(),
+      actionLabel: z.string().optional(),
+      actionUrl: z.string().url().optional(),
+    }),
+    render: TravelAlertCard,
+  });
+
+  useComponent({
+    name: "bill_split_card",
+    description:
+      "Draw an itemized group bill split card with member shares and debt settlement matrix ('who owes whom').",
+    parameters: z.object({
+      title: z.string().describe("Bill description."),
+      currency: z.string().default("SGD"),
+      totalAmount: z.number(),
+      paidBy: z.string(),
+      splitMethod: z.string().default("Equal / Itemized"),
+      members: z
+        .array(
+          z.object({
+            name: z.string(),
+            share: z.number(),
+            itemsSummary: z.string().optional(),
+          }),
+        )
+        .min(1),
+      settlements: z
+        .array(
+          z.object({
+            from: z.string(),
+            to: z.string(),
+            amount: z.number(),
+          }),
+        )
+        .default([]),
+    }),
+    render: BillSplitCard,
+  });
+
 
   /**
    * The approval gate, web idiom.

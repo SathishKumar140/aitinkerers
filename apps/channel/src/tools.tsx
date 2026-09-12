@@ -126,26 +126,53 @@ export const proposeAction = defineChannelTool({
   },
 });
 
-import { buildGoogleCalendarUrl, calendarEventSchema } from "agent-core";
+import {
+  buildGoogleCalendarUrl,
+  createGoogleCalendarEventDirect,
+  calendarEventSchema,
+} from "agent-core";
 
 /**
- * 1-Click Google Calendar event generator
+ * Direct Google Calendar event creator (with 1-Click fallback)
  */
 export const createCalendarEvent = defineChannelTool({
   name: "create_calendar_event",
   description:
-    "Generate a 1-click Google Calendar event link for an outing or reservation. Call this when users want to schedule the outing, save it to their calendar, or invite participants.",
+    "Schedule an event on Google Calendar for an outing, trip, or reservation. Automatically creates the event on Google Calendar if OAuth credentials are configured, or provides a 1-click Google Calendar button.",
   parameters: calendarEventSchema,
   async handler(args, { thread }) {
-    const calendarUrl = buildGoogleCalendarUrl(args);
+    const directResult = await createGoogleCalendarEventDirect(args);
     const dateLabel = args.date ? ` on ${args.date}` : "";
     const timeLabel = args.startTime ? ` at ${args.startTime}` : "";
+    const calendarUrl = directResult.htmlLink || directResult.fallbackUrl;
 
+    if (directResult.success) {
+      await thread.post(
+        <Message accent="#2E7D5B">
+          <Header>✅ Added to Google Calendar</Header>
+          <Section>
+            <Markdown>{`**${args.title || args.venueName}** has been automatically scheduled in Google Calendar!\n\n📍 **Location:** ${args.location || args.venueName}\n⏰ **Schedule:**${dateLabel}${timeLabel} (${args.durationMinutes ?? 90} mins)`}</Markdown>
+          </Section>
+          {args.attendees && args.attendees.length > 0 && (
+            <Context>{`Participants: ${args.attendees.join(", ")}`}</Context>
+          )}
+          <Actions>
+            <Button url={calendarUrl} style="primary">
+              📅 Open in Google Calendar
+            </Button>
+          </Actions>
+        </Message>,
+      );
+
+      return `Event automatically created in Google Calendar: ${calendarUrl}`;
+    }
+
+    // Fallback 1-click invite if credentials are not configured
     await thread.post(
       <Message accent="#2E7D5B">
         <Header>📅 Google Calendar Invite Ready</Header>
         <Section>
-          <Markdown>{`**${args.title}**\n📍 **Location:** ${args.location || args.venueName}\n⏰ **Schedule:**${dateLabel}${timeLabel} (${args.durationMinutes ?? 90} mins)`}</Markdown>
+          <Markdown>{`**${args.title || args.venueName}**\n📍 **Location:** ${args.location || args.venueName}\n⏰ **Schedule:**${dateLabel}${timeLabel} (${args.durationMinutes ?? 90} mins)`}</Markdown>
         </Section>
         {args.attendees && args.attendees.length > 0 && (
           <Context>{`Participants: ${args.attendees.join(", ")}`}</Context>
@@ -158,7 +185,8 @@ export const createCalendarEvent = defineChannelTool({
       </Message>,
     );
 
-    return `Calendar invite generated and posted with 1-click Google Calendar button: ${calendarUrl}`;
+    return `Calendar invite generated with 1-click button: ${calendarUrl}`;
   },
 });
+
 

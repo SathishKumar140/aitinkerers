@@ -7,7 +7,12 @@ import {
   Timeline,
   GroupConsensusCard,
   ItineraryCard,
+  TravelPlanCard,
+  FlightHotelCard,
+  TravelAlertCard,
+  BillSplitCard,
 } from "./streamed-cards";
+
 
 test("incident card renders loading content before any arguments arrive", () => {
   const html = renderToStaticMarkup(createElement(IncidentCard, {}));
@@ -119,3 +124,101 @@ test("itinerary card renders schedule table", () => {
   assert.match(fullHtml, /MRT Exit A/);
   assert.match(fullHtml, /Genesis Bistro/);
 });
+
+test("travel plan card renders destination, dates, and skill badge", () => {
+  const emptyHtml = renderToStaticMarkup(createElement(TravelPlanCard, {}));
+  assert.match(emptyHtml, /Planning multi-day travel/);
+
+  const fullHtml = renderToStaticMarkup(
+    createElement(TravelPlanCard, {
+      destination: "Tokyo, Japan",
+      title: "Tokyo Autumn Discovery",
+      dates: "Oct 15 - Oct 19, 2026",
+      travelers: ["Sathish", "Ramesh"],
+      estimatedBudget: "$1,200 SGD",
+      highlights: ["Shinjuku night walk", "Meiji Shrine & Harajuku"],
+    }),
+  );
+
+  assert.match(fullHtml, /Tokyo Autumn Discovery/);
+  assert.match(fullHtml, /Skill: Travel Planner/);
+  assert.match(fullHtml, /Sathish/);
+  assert.match(fullHtml, /Shinjuku night walk/);
+  assert.match(fullHtml, /Add Trip to Google Calendar/);
+});
+
+test("flight hotel card renders flights and stays", () => {
+  const fullHtml = renderToStaticMarkup(
+    createElement(FlightHotelCard, {
+      destination: "Tokyo",
+      title: "Tokyo Travel Picks",
+      flights: [
+        {
+          airline: "Singapore Airlines",
+          flightNumber: "SQ638",
+          route: "SIN → HND",
+          times: "07:10 - 15:20",
+          price: "$680 SGD",
+        },
+      ],
+      hotels: [
+        {
+          name: "Hotel Gracery Shinjuku",
+          neighborhood: "Shinjuku",
+          rating: "4.5★",
+          pricePerNight: "$160/night",
+          amenities: ["Near JR Transit"],
+        },
+      ],
+    }),
+  );
+
+  assert.match(fullHtml, /Tokyo Travel Picks/);
+  assert.match(fullHtml, /Singapore Airlines/);
+  assert.match(fullHtml, /Hotel Gracery Shinjuku/);
+  assert.match(fullHtml, /Skill: Travel Planner/);
+});
+
+test("travel alert card renders urgency and message", () => {
+  const fullHtml = renderToStaticMarkup(
+    createElement(TravelAlertCard, {
+      title: "Flight Check-In Open",
+      tripName: "Tokyo Trip",
+      urgency: "warning",
+      category: "checkin",
+      message: "Online check-in is now open for SQ638.",
+    }),
+  );
+
+  assert.match(fullHtml, /Flight Check-In Open/);
+  assert.match(fullHtml, /warning/i);
+  assert.match(fullHtml, /Online check-in is now open/);
+});
+
+test("bill split card renders total, payer, members and settlements", () => {
+  const fullHtml = renderToStaticMarkup(
+    createElement(BillSplitCard, {
+      title: "Team Dinner & Drinks",
+      currency: "SGD",
+      totalAmount: 145,
+      paidBy: "Ramesh",
+      members: [
+        { name: "Sathish", share: 45, itemsSummary: "Veg Platter" },
+        { name: "Alice", share: 40, itemsSummary: "Vegan Bowl" },
+        { name: "Ramesh", share: 60, itemsSummary: "BBQ & Beer" },
+      ],
+      settlements: [
+        { from: "Sathish", to: "Ramesh", amount: 45 },
+        { from: "Alice", to: "Ramesh", amount: 40 },
+      ],
+    }),
+  );
+
+  assert.match(fullHtml, /Team Dinner &amp; Drinks/);
+  assert.match(fullHtml, /145.00/);
+  assert.match(fullHtml, /Ramesh/);
+  assert.match(fullHtml, /Sathish/);
+  assert.match(fullHtml, /Skill: Bill Splitter/);
+  assert.match(fullHtml, /Mark All Settled/);
+});
+

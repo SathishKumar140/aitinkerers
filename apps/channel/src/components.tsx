@@ -1,9 +1,9 @@
 /**
- * Agent-rendered components for Project Roam Concierge.
+ * Agent-rendered components for Project Roam.
  *
- * `defineChannelComponent` turns a component into a tool the agent can call to
- * draw UI itself. In Slack, a native card is easier to scan than long prose,
- * and lets the whole group see why a recommendation fits everyone.
+ * Registered on the Slack channel via `createChannel({ components: [...] })`.
+ * CopilotKit Channels walks the tree returned by `render()`, translates each
+ * intrinsic element into Slack Block Kit, and updates the thread.
  *
  * One tree renders as Slack Block Kit, Teams Adaptive Cards, and Discord
  * components. A surface that cannot render a node skips it rather than failing.
@@ -266,37 +266,349 @@ export const Timeline = defineChannelComponent({
 });
 
 /**
- * The Roam welcome message in Slack threads.
+ * Travel Plan Card
+ */
+export const TravelPlanCard = defineChannelComponent({
+  name: "travel_plan_card",
+  description:
+    "Draw a multi-day trip plan card with destination, dates, traveler list, itinerary highlights, and 1-click Google Calendar button.",
+  parameters: z.object({
+    destination: z.string().describe("Destination city or country."),
+    title: z.string().describe("Trip title, e.g. 'Tokyo Autumn Discovery'."),
+    dates: z.string().describe("Dates, e.g. 'Oct 15 - Oct 19, 2026'."),
+    travelers: z.array(z.string()).default([]).describe("Traveler names."),
+    estimatedBudget: z.string().optional().describe("Estimated budget range."),
+    highlights: z.array(z.string()).min(1).describe("Daily itinerary highlights."),
+    calendarUrl: z.string().url().optional().describe("Google Calendar URL."),
+    mapUrl: z.string().url().optional().describe("Google Maps URL."),
+  }),
+  render({
+    destination,
+    title,
+    dates,
+    travelers,
+    estimatedBudget,
+    highlights,
+    calendarUrl,
+    mapUrl,
+  }) {
+    const finalCalendarUrl =
+      calendarUrl ||
+      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        title,
+      )}&location=${encodeURIComponent(destination)}&details=${encodeURIComponent(
+        `Trip to ${destination} planned with Project Roam.\nTravelers: ${travelers.join(", ")}`,
+      )}`;
+
+    const finalMapUrl =
+      mapUrl ||
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
+
+    return (
+      <Message accent="#2563EB">
+        <Header>{`✈️ ${title}`}</Header>
+        <Context>{`Active Skill: Travel Planner · ${destination} · ${travelers.length} Travelers`}</Context>
+        <Fields>
+          <Field label="Dates">{dates}</Field>
+          <Field label="Est. Budget">{estimatedBudget || "Flexible"}</Field>
+        </Fields>
+        {travelers.length > 0 && (
+          <Section>
+            <Markdown>{`*Travelers:*\n${travelers.map((t) => `• ${t}`).join("\n")}`}</Markdown>
+          </Section>
+        )}
+        <Section>
+          <Markdown>{`*Itinerary Highlights:*\n${highlights.map((h) => `• ${h}`).join("\n")}`}</Markdown>
+        </Section>
+        <Actions>
+          <Button url={finalCalendarUrl} style="primary">
+            📅 Add Trip to Google Calendar
+          </Button>
+          <Button url={finalMapUrl}>🗺️ View Destination Map</Button>
+        </Actions>
+      </Message>
+    );
+  },
+});
+
+/**
+ * Flight & Hotel Recommendation Card
+ */
+export const FlightHotelCard = defineChannelComponent({
+  name: "flight_hotel_card",
+  description:
+    "Draw flight options and hotel recommendations with routes, times, ratings, and price tags.",
+  parameters: z.object({
+    destination: z.string(),
+    title: z.string(),
+    flights: z
+      .array(
+        z.object({
+          airline: z.string(),
+          flightNumber: z.string().optional(),
+          route: z.string(),
+          times: z.string(),
+          price: z.string(),
+          bookingUrl: z.string().url().optional(),
+        }),
+      )
+      .default([]),
+    hotels: z
+      .array(
+        z.object({
+          name: z.string(),
+          neighborhood: z.string(),
+          rating: z.string(),
+          pricePerNight: z.string(),
+          amenities: z.array(z.string()).default([]),
+          bookingUrl: z.string().url().optional(),
+        }),
+      )
+      .default([]),
+  }),
+  render({ destination, title, flights, hotels }) {
+    const flightsSummary = flights.length
+      ? flights
+          .map(
+            (f) =>
+              `• *${f.airline}* (${f.route}) · ${f.times} · ~*${f.price}*`,
+          )
+          .join("\n")
+      : "No flights selected yet.";
+
+    const hotelsSummary = hotels.length
+      ? hotels
+          .map(
+            (h) =>
+              `• *${h.name}* (${h.rating}) · ${h.neighborhood} · *${h.pricePerNight}*`,
+          )
+          .join("\n")
+      : "No hotels selected yet.";
+
+    const defaultFlightsUrl = `https://www.google.com/travel/flights?q=flights+to+${encodeURIComponent(destination)}`;
+    const defaultHotelsUrl = `https://www.google.com/travel/hotels?q=hotels+in+${encodeURIComponent(destination)}`;
+
+    return (
+      <Message accent="#0284C7">
+        <Header>{`🏨 ${title}`}</Header>
+        <Context>{`Active Skill: Travel Planner · ${destination} Recommendations`}</Context>
+        <Section>
+          <Markdown>{`*✈️ Recommended Flights:*\n${flightsSummary}`}</Markdown>
+        </Section>
+        <Section>
+          <Markdown>{`*🏨 Recommended Stays:*\n${hotelsSummary}`}</Markdown>
+        </Section>
+        <Actions>
+          <Button url={defaultFlightsUrl} style="primary">
+            ✈️ Search Flights
+          </Button>
+          <Button url={defaultHotelsUrl}>🏨 Search Hotels</Button>
+        </Actions>
+      </Message>
+    );
+  },
+});
+
+/**
+ * Travel Alert / Notification Card
+ */
+export const TravelAlertCard = defineChannelComponent({
+  name: "travel_alert_card",
+  description:
+    "Draw a travel notification card (check-in reminders, flight alerts, weather warnings, or packing reminders).",
+  parameters: z.object({
+    title: z.string(),
+    tripName: z.string(),
+    urgency: z.enum(["info", "warning", "critical"]).default("info"),
+    category: z.enum(["flight", "checkin", "weather", "packing", "reminder"]).default("reminder"),
+    message: z.string(),
+    actionLabel: z.string().optional(),
+    actionUrl: z.string().url().optional(),
+  }),
+  render({ title, tripName, urgency, message, actionLabel, actionUrl }) {
+    const accent =
+      urgency === "critical"
+        ? "#DC2626"
+        : urgency === "warning"
+        ? "#D97706"
+        : "#2563EB";
+
+    return (
+      <Message accent={accent}>
+        <Header>{`🔔 ${title}`}</Header>
+        <Context>{`Active Skill: Travel Planner · ${tripName} · ${urgency.toUpperCase()}`}</Context>
+        <Section>
+          <Markdown>{message}</Markdown>
+        </Section>
+        {actionUrl && (
+          <Actions>
+            <Button url={actionUrl} style="primary">
+              {actionLabel || "View Details"}
+            </Button>
+          </Actions>
+        )}
+      </Message>
+    );
+  },
+});
+
+/**
+ * Splitwise-Style Group Bill Split Card
+ */
+export const BillSplitCard = defineChannelComponent({
+  name: "bill_split_card",
+  description:
+    "Draw an itemized group bill split card with member shares and 'who owes whom' debt settlements.",
+  parameters: z.object({
+    title: z.string().describe("Bill description, e.g. 'Dinner at RedDot Brewhouse'."),
+    currency: z.string().optional().default("SGD"),
+    totalAmount: z.number().describe("Total bill amount."),
+    paidBy: z.string().describe("Name of person who paid."),
+    splitMethod: z.string().optional().default("Equal / Itemized"),
+    members: z
+      .array(
+        z.object({
+          name: z.string(),
+          share: z.number(),
+          itemsSummary: z.string().optional(),
+        }),
+      )
+      .min(1),
+    settlements: z
+      .array(
+        z.object({
+          from: z.string(),
+          to: z.string(),
+          amount: z.number(),
+        }),
+      )
+      .optional()
+      .default([]),
+  }),
+  render({
+    title,
+    currency = "SGD",
+    totalAmount,
+    paidBy,
+    splitMethod = "Equal / Itemized",
+    members,
+    settlements = [],
+  }) {
+    return (
+      <Message accent="#10B981">
+        <Header>{`💸 ${title} (${currency} ${totalAmount.toFixed(2)})`}</Header>
+        <Context>{`Active Skill: Group Bill Splitter · Payer: ${paidBy}`}</Context>
+        <Fields>
+          <Field label="Total Bill">{`${currency} ${totalAmount.toFixed(2)}`}</Field>
+          <Field label="Paid By">{paidBy}</Field>
+        </Fields>
+        <Section>
+          <Markdown>
+            {`*Member Breakdown (${splitMethod}):*\n` +
+              members
+                .map(
+                  (m) =>
+                    `• *${m.name}*: ${currency} ${m.share.toFixed(2)}${
+                      m.itemsSummary ? ` (${m.itemsSummary})` : ""
+                    }`,
+                )
+                .join("\n")}
+          </Markdown>
+        </Section>
+        {settlements.length > 0 && (
+          <Section>
+            <Markdown>
+              {`*Settlements ("Who Owes Whom"):*\n` +
+                settlements
+                  .map(
+                    (s) =>
+                      `• *${s.from}* owes *${s.to}*: *${currency} ${s.amount.toFixed(2)}*`,
+                  )
+                  .join("\n")}
+            </Markdown>
+          </Section>
+        )}
+        <Actions>
+          <Button
+            value="settled"
+            style="primary"
+            onClick={async ({ thread }) => {
+              await thread.post(
+                <Message accent="#10B981">
+                  <Header>🎉 Bill Settled!</Header>
+                  <Section>
+                    <Markdown>{`All balances for **${title}** have been marked as settled by the group.`}</Markdown>
+                  </Section>
+                </Message>,
+              );
+            }}
+          >
+            ✓ Mark Settled
+          </Button>
+        </Actions>
+      </Message>
+    );
+  },
+});
+
+/**
+ * The Roam welcome message in Slack threads supporting multiple recipes.
  */
 export function welcomeMessage(platform: string) {
   return (
-    <Message accent="#2E7D5B">
-      <Header>Roam: Multiplayer Group Concierge</Header>
+    <Message accent="#2563EB">
+      <Header>Roam: Multiplayer Assistant</Header>
       <Section>
         <Markdown>
-          {"When planning a team dinner, drinks, or group outing, @-mention me in this " +
+          {"I am your multiplayer team assistant on " +
             platform +
-            " thread. I read everyone's preferences and dietary needs to find the consensus spot that works for everyone!"}
+            "! I support 3 specialized recipes:\n\n" +
+            "• 🍽️ **Outing & Dining:** Group dinners, constraint arbitration, 1-click Google Calendar.\n" +
+            "• ✈️ **Travel Planner:** Multi-day trips, flight & hotel picks, travel alerts, calendar schedule.\n" +
+            "• 💸 **Bill Splitter:** Splitwise-style group bill splitting & settlement calculations."}
         </Markdown>
       </Section>
       <Fields>
-        <Field label="I will">Extract preferences, arbitrate conflicts, search live venues</Field>
-        <Field label="I won't">Finalize bookings without group confirmation</Field>
+        <Field label="Supported Recipes">🍽️ Outings · ✈️ Travel · 💸 Bill Split</Field>
+        <Field label="Platform Features">Interactive Cards · Google Calendar · Maps</Field>
       </Fields>
       <Actions>
         <Button
-          value="arbitrate"
+          value="plan_outing"
           style="primary"
           onClick={async ({ thread }) => {
             await thread.runAgent({
               prompt:
-                "Read this thread, extract everyone's constraints (diet, budget, location, vibe), and find the best group consensus spot.",
+                "Read this thread and find our best group consensus dinner spot in Singapore.",
             });
           }}
         >
-          Arbitrate group choices
+          🍽️ Plan Outing
+        </Button>
+        <Button
+          value="plan_travel"
+          onClick={async ({ thread }) => {
+            await thread.runAgent({
+              prompt:
+                "Plan a 4-day group trip to Tokyo with flight & hotel recommendations and Google Calendar link.",
+            });
+          }}
+        >
+          ✈️ Plan Travel
+        </Button>
+        <Button
+          value="split_bill"
+          onClick={async ({ thread }) => {
+            await thread.runAgent({
+              prompt:
+                "Split our team dinner bill of $145 SGD paid by Ramesh among Sathish ($45), Alice ($40), and Ramesh ($60).",
+            });
+          }}
+        >
+          💸 Split Bill
         </Button>
       </Actions>
     </Message>
   );
 }
+

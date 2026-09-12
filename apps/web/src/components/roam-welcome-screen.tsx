@@ -11,7 +11,16 @@ interface RoamWelcomeScreenProps {
 export function RoamWelcomeScreen({ input }: RoamWelcomeScreenProps) {
   const { agent } = useAgent({ agentId: "default" });
   const { copilotkit } = useCopilotKit();
-  const { members, settings, promptSummary, setIsConfigModalOpen } = useGroup();
+  const {
+    members,
+    settings,
+    travelSettings,
+    billSplitSettings,
+    activeRecipe,
+    setActiveRecipe,
+    promptSummary,
+    setIsConfigModalOpen,
+  } = useGroup();
 
   const handleSendPrompt = async (promptText: string) => {
     try {
@@ -33,37 +42,37 @@ export function RoamWelcomeScreen({ input }: RoamWelcomeScreenProps) {
       icon: "🎯",
       title: "Find Consensus Dinner",
       desc: `Balance ${memberNames}'s tastes and budgets in ${settings.neighborhood}.`,
-      badge: "Zero Compromise",
-      badgeColor: "#059669",
-      badgeBg: "#ecfdf5",
-      prompt: `We are planning a group outing in ${settings.neighborhood} for our crew: ${promptSummary}. Strict dietary inclusivity is ${settings.strictDietary ? "ENABLED (100% safe options required)" : "flexible"}. Find our top consensus dinner spot, calculate match scores, and draw a consensus_card with maps and calendar links.`,
-    },
-    {
-      icon: "🗺️",
-      title: "Plan 3-Stop Evening Route",
-      desc: `Dinner, artisan dessert & drinks near ${settings.neighborhood} with walkable times.`,
-      badge: "Walkable",
-      badgeColor: "#2563eb",
-      badgeBg: "#eff6ff",
-      prompt: `Plan a seamless 3-stop Friday evening itinerary around ${settings.neighborhood} (Dinner, Dessert, Drinks) with transit times suitable for: ${promptSummary}. Draw an itinerary_card.`,
-    },
-    {
-      icon: "📸",
-      title: "Scan Flyer / Menu",
-      desc: "Drop or paste a menu flyer to audit dietary safety and verify budget limits.",
-      badge: "Vision AI",
-      badgeColor: "#7c3aed",
-      badgeBg: "#faf5ff",
-      prompt: `Analyze the attached menu or flyer. Check if every person in our group (${promptSummary}) can eat comfortably without exceeding their budget.`,
-    },
-    {
-      icon: "🍸",
-      title: "Late Night Drinks & Mocktails",
-      desc: `Cozy craft cocktail lounges & mocktail bars with great conversation vibes.`,
-      badge: "Vibe Match",
+      badge: "Outing Recipe",
       badgeColor: "#d97706",
       badgeBg: "#fffbeb",
-      prompt: `Recommend 2 cozy cocktail and mocktail spots near ${settings.neighborhood} with great non-alcoholic craft options and atmosphere for conversation.`,
+      prompt: `We are planning a group outing in ${settings.neighborhood} for our crew: ${promptSummary}. Strict dietary inclusivity is ${settings.strictDietary ? "ENABLED (100% safe options required)" : "flexible"}. Find our top consensus dinner spot, calculate match scores, and draw a consensus_card with Google Maps and Google Calendar links.`,
+    },
+    {
+      icon: "✈️",
+      title: "Plan 4-Day Tokyo Trip",
+      desc: `Flights, 4-star stays, daily itinerary & Google Calendar sync for ${travelSettings.destination}.`,
+      badge: "Travel Recipe",
+      badgeColor: "#2563eb",
+      badgeBg: "#eff6ff",
+      prompt: `Plan a 4-day group trip to ${travelSettings.destination} for: ${promptSummary}. Recommend direct flights from Singapore with airlines & prices, top 4-star hotels near transit, and draw a travel_plan_card with a 1-click Google Calendar schedule.`,
+    },
+    {
+      icon: "💸",
+      title: "Split Team Dinner Bill ($145)",
+      desc: `Splitwise-style itemized split, member shares & 'who owes whom' settlements.`,
+      badge: "Bill Split Recipe",
+      badgeColor: "#059669",
+      badgeBg: "#ecfdf5",
+      prompt: `Split our team dinner bill of $145.00 SGD paid by Ramesh among: Sathish ($45 for vegetarian dishes), Alice ($40 for vegan bowl & mocktail), and Ramesh ($60 for smoked ribs & craft beer). Calculate the exact settlement matrix and draw a bill_split_card.`,
+    },
+    {
+      icon: "🔔",
+      title: "Flight Check-In & Travel Alert",
+      desc: `Luggage guidelines, flight SQ638 status, online check-in, and weather alerts.`,
+      badge: "Travel Alert",
+      badgeColor: "#7c3aed",
+      badgeBg: "#faf5ff",
+      prompt: `Generate a travel notification alert for Singapore Airlines flight SQ638 check-in and weather advisory for ${travelSettings.destination}. Draw a travel_alert_card.`,
     },
   ];
 
@@ -87,17 +96,18 @@ export function RoamWelcomeScreen({ input }: RoamWelcomeScreenProps) {
         </div>
         <div className="roam-hero-tag">
           <span className="roam-hero-tag-dot" />
-          <span>Social Outings AI · Singapore</span>
+          <span>Multiplayer AI · Dining · Travel · Bill Split</span>
         </div>
       </div>
 
       {/* Hero Headings */}
       <h1 className="roam-hero-title">
-        Where should we go tonight?
+        Where should we go, travel, or split?
       </h1>
       <p className="roam-hero-subtitle">
-        Instant consensus for different diets, budgets, and vibes. Zero compromises.
+        Instant group consensus for outings, complete travel itineraries &amp; effortless bill splitting.
       </p>
+
 
       {/* Pinned Group Constraints Strip with Edit Button */}
       <div className="roam-group-strip">

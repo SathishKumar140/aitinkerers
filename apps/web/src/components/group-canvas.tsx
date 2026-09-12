@@ -42,7 +42,15 @@ export function GroupCanvas({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [activeTab, setActiveTab] = useState<"context" | "members">("context");
-  const { members, settings, setIsConfigModalOpen } = useGroup();
+  const {
+    members,
+    settings,
+    travelSettings,
+    billSplitSettings,
+    activeRecipe,
+    setActiveRecipe,
+    setIsConfigModalOpen,
+  } = useGroup();
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -63,20 +71,58 @@ export function GroupCanvas({
 
   return (
     <aside className="roam-canvas-panel" aria-label="Group Context Canvas">
-      {/* Active Outing Card */}
+      {/* Active Recipe Header Card */}
       <div className="roam-card" style={{ padding: "18px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              <span className="roam-tag roam-tag-blue" style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                🇸🇬 Active Outing
+              <span
+                className="roam-tag"
+                style={{
+                  fontSize: "10.5px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  background:
+                    activeRecipe === "travel"
+                      ? "#eff6ff"
+                      : activeRecipe === "bill_split"
+                      ? "#ecfdf5"
+                      : "#fffbeb",
+                  color:
+                    activeRecipe === "travel"
+                      ? "#2563eb"
+                      : activeRecipe === "bill_split"
+                      ? "#059669"
+                      : "#d97706",
+                  border: `1px solid ${
+                    activeRecipe === "travel"
+                      ? "#bfdbfe"
+                      : activeRecipe === "bill_split"
+                      ? "#a7f3d0"
+                      : "#fde68a"
+                  }`,
+                }}
+              >
+                {activeRecipe === "travel"
+                  ? "✈️ Travel Planner"
+                  : activeRecipe === "bill_split"
+                  ? "💸 Bill Splitter"
+                  : "🇸🇬 Outing & Dining"}
               </span>
               <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 500 }}>
-                {settings.time}
+                {activeRecipe === "travel"
+                  ? travelSettings.dates
+                  : activeRecipe === "bill_split"
+                  ? `${billSplitSettings.currency} ${billSplitSettings.totalAmount.toFixed(2)} Total`
+                  : settings.time}
               </span>
             </div>
             <h2 style={{ fontSize: "1.12rem", fontWeight: 800, margin: 0, color: "#0f172a", letterSpacing: "-0.02em" }}>
-              {settings.title}
+              {activeRecipe === "travel"
+                ? `Trip to ${travelSettings.destination}`
+                : activeRecipe === "bill_split"
+                ? billSplitSettings.title
+                : settings.title}
             </h2>
           </div>
           <span
@@ -93,7 +139,20 @@ export function GroupCanvas({
         </div>
 
         <p style={{ margin: "0 0 10px", fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
-          📍 Target: <strong>{settings.neighborhood}</strong> · {settings.strictDietary ? "Zero compromise dietary filtering." : "Flexible matching."}
+          {activeRecipe === "travel" ? (
+            <>
+              🎯 Destination: <strong>{travelSettings.destination}</strong> · Budget: {travelSettings.budgetTier}
+            </>
+          ) : activeRecipe === "bill_split" ? (
+            <>
+              💳 Paid by: <strong>Ramesh</strong> · Method: {billSplitSettings.splitMethod}
+            </>
+          ) : (
+            <>
+              📍 Target: <strong>{settings.neighborhood}</strong> ·{" "}
+              {settings.strictDietary ? "Zero compromise dietary filtering." : "Flexible matching."}
+            </>
+          )}
         </p>
 
         {/* Configure Group & Constraints Button */}
@@ -119,7 +178,7 @@ export function GroupCanvas({
           }}
         >
           <span>✏️</span>
-          <span>Configure Members &amp; Constraints</span>
+          <span>Configure Members &amp; Preferences</span>
         </button>
 
         {/* Quick Tabs */}
@@ -141,7 +200,7 @@ export function GroupCanvas({
               transition: "all 0.15s ease",
             }}
           >
-            📊 Consensus Matrix
+            📊 {activeRecipe === "travel" ? "Trip Matrix" : activeRecipe === "bill_split" ? "Settlement Matrix" : "Consensus Matrix"}
           </button>
           <button
             type="button"
@@ -165,61 +224,138 @@ export function GroupCanvas({
         </div>
       </div>
 
+
       {activeTab === "context" ? (
-        /* Consensus Compatibility Matrix */
-        <div className="roam-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-            <h3 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 700, color: "#1e293b" }}>
-              🎯 Live Group Constraints
-            </h3>
-            <span className="roam-tag roam-tag-emerald">
-              96% Arbitrated
-            </span>
-          </div>
+        activeRecipe === "travel" ? (
+          /* Travel & Trip Matrix */
+          <div className="roam-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <h3 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 700, color: "#1e293b" }}>
+                ✈️ Trip Parameters
+              </h3>
+              <span className="roam-tag roam-tag-blue">
+                Travel Ready
+              </span>
+            </div>
 
-          {/* Metric 1 */}
-          <div style={{ marginBottom: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", marginBottom: "4px" }}>
-              <span style={{ fontWeight: 600, color: "#334155" }}>Dietary Inclusivity</span>
-              <span style={{ fontWeight: 700, color: "#059669" }}>100% (Zero Compromise)</span>
+            <div style={{ marginBottom: "10px", fontSize: "12px", background: "#f8fafc", padding: "8px 10px", borderRadius: "6px" }}>
+              <div style={{ fontWeight: 700, color: "#0f172a" }}>🛫 Route &amp; Flight Policy</div>
+              <div style={{ color: "#475569", marginTop: "2px" }}>{travelSettings.flightPreference}</div>
             </div>
-            <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "999px", overflow: "hidden" }}>
-              <div style={{ width: "100%", height: "100%", background: "#10b981", borderRadius: "999px" }} />
-            </div>
-            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
-              {members.map((m) => `${m.name.split(" ")[0]} (${m.diet})`).join(" + ")} dual-friendly menus.
-            </div>
-          </div>
 
-          {/* Metric 2 */}
-          <div style={{ marginBottom: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", marginBottom: "4px" }}>
-              <span style={{ fontWeight: 600, color: "#334155" }}>Budget Overlap</span>
-              <span style={{ fontWeight: 700, color: "#2563eb" }}>94% Match</span>
+            <div style={{ marginBottom: "10px", fontSize: "12px", background: "#f8fafc", padding: "8px 10px", borderRadius: "6px" }}>
+              <div style={{ fontWeight: 700, color: "#0f172a" }}>🏨 Lodging Preference</div>
+              <div style={{ color: "#475569", marginTop: "2px" }}>{travelSettings.hotelPreference}</div>
             </div>
-            <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "999px", overflow: "hidden" }}>
-              <div style={{ width: "94%", height: "100%", background: "#2563eb", borderRadius: "999px" }} />
-            </div>
-            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
-              Target range: ${minBudget} – ${maxBudget} per person across group preferences.
-            </div>
-          </div>
 
-          {/* Metric 3 */}
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", marginBottom: "4px" }}>
-              <span style={{ fontWeight: 600, color: "#334155" }}>Transit &amp; Atmosphere</span>
-              <span style={{ fontWeight: 700, color: "#7c3aed" }}>92% Match</span>
+            <div style={{ marginBottom: "10px", fontSize: "12px", background: "#ecfdf5", padding: "8px 10px", borderRadius: "6px", border: "1px solid #a7f3d0" }}>
+              <div style={{ fontWeight: 700, color: "#065f46" }}>📅 Google Calendar Integration</div>
+              <div style={{ color: "#047857", marginTop: "2px" }}>
+                Direct API &amp; 1-click trip scheduling enabled.
+              </div>
             </div>
-            <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "999px", overflow: "hidden" }}>
-              <div style={{ width: "92%", height: "100%", background: "#8b5cf6", borderRadius: "999px" }} />
-            </div>
-            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
-              Within 6 mins walk from {settings.transitStop}.
+
+            <div style={{ fontSize: "11px", color: "#64748b" }}>
+              👥 Travelers: {members.map((m) => m.name.split(" ")[0]).join(", ")}
             </div>
           </div>
-        </div>
+        ) : activeRecipe === "bill_split" ? (
+          /* Splitwise Bill Split Matrix */
+          <div className="roam-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <h3 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 700, color: "#1e293b" }}>
+                💸 Splitwise Debt Matrix
+              </h3>
+              <span className="roam-tag roam-tag-emerald">
+                Auto-Balanced
+              </span>
+            </div>
+
+            <div style={{ marginBottom: "10px", fontSize: "12px", background: "#f0fdf4", padding: "8px 10px", borderRadius: "6px", border: "1px solid #bbf7d0" }}>
+              <div style={{ fontWeight: 700, color: "#14532d" }}>
+                Total Bill: {billSplitSettings.currency} {billSplitSettings.totalAmount.toFixed(2)}
+              </div>
+              <div style={{ color: "#15803d", marginTop: "2px" }}>
+                Paid in full by <strong>Ramesh</strong>.
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "5px 8px", background: "#f8fafc", borderRadius: "6px" }}>
+                <span>Sathish Kumar owes Ramesh:</span>
+                <strong style={{ color: "#047857" }}>$45.00 SGD</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "5px 8px", background: "#f8fafc", borderRadius: "6px" }}>
+                <span>Alice owes Ramesh:</span>
+                <strong style={{ color: "#047857" }}>$40.00 SGD</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "5px 8px", background: "#f8fafc", borderRadius: "6px" }}>
+                <span>Ramesh share (payer):</span>
+                <strong style={{ color: "#64748b" }}>$60.00 SGD</strong>
+              </div>
+            </div>
+
+            <div style={{ fontSize: "11px", color: "#64748b" }}>
+              ⚡ 2 settlements resolve all debt for {members.length} members.
+            </div>
+          </div>
+        ) : (
+          /* Consensus Compatibility Matrix */
+          <div className="roam-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <h3 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 700, color: "#1e293b" }}>
+                🎯 Live Group Constraints
+              </h3>
+              <span className="roam-tag roam-tag-emerald">
+                96% Arbitrated
+              </span>
+            </div>
+
+            {/* Metric 1 */}
+            <div style={{ marginBottom: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", marginBottom: "4px" }}>
+                <span style={{ fontWeight: 600, color: "#334155" }}>Dietary Inclusivity</span>
+                <span style={{ fontWeight: 700, color: "#059669" }}>100% (Zero Compromise)</span>
+              </div>
+              <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "999px", overflow: "hidden" }}>
+                <div style={{ width: "100%", height: "100%", background: "#10b981", borderRadius: "999px" }} />
+              </div>
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
+                {members.map((m) => `${m.name.split(" ")[0]} (${m.diet})`).join(" + ")} dual-friendly menus.
+              </div>
+            </div>
+
+            {/* Metric 2 */}
+            <div style={{ marginBottom: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", marginBottom: "4px" }}>
+                <span style={{ fontWeight: 600, color: "#334155" }}>Budget Overlap</span>
+                <span style={{ fontWeight: 700, color: "#2563eb" }}>94% Match</span>
+              </div>
+              <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "999px", overflow: "hidden" }}>
+                <div style={{ width: "94%", height: "100%", background: "#2563eb", borderRadius: "999px" }} />
+              </div>
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
+                Target range: ${minBudget} – ${maxBudget} per person across group preferences.
+              </div>
+            </div>
+
+            {/* Metric 3 */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", marginBottom: "4px" }}>
+                <span style={{ fontWeight: 600, color: "#334155" }}>Transit &amp; Atmosphere</span>
+                <span style={{ fontWeight: 700, color: "#7c3aed" }}>92% Match</span>
+              </div>
+              <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "999px", overflow: "hidden" }}>
+                <div style={{ width: "92%", height: "100%", background: "#8b5cf6", borderRadius: "999px" }} />
+              </div>
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
+                Within 6 mins walk from {settings.transitStop}.
+              </div>
+            </div>
+          </div>
+        )
       ) : (
+
         /* Member Roster List */
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {members.map((m) => (

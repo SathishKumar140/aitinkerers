@@ -16,7 +16,12 @@ import {
   ItineraryCard,
   IncidentCard,
   Timeline,
+  TravelPlanCard,
+  FlightHotelCard,
+  TravelAlertCard,
+  BillSplitCard,
 } from "./components";
+
 
 const ctx = { platform: "slack" as const, signal: new AbortController().signal };
 
@@ -162,3 +167,116 @@ describe("timeline", () => {
     assert.ok(out.includes("—"));
   });
 });
+
+describe("travel_plan_card", () => {
+  it("renders destination, dates, and google calendar link", async () => {
+    const out = await render(
+      TravelPlanCard.render(
+        {
+          destination: "Tokyo, Japan",
+          title: "Tokyo Autumn Discovery",
+          dates: "Oct 15 - Oct 19, 2026",
+          travelers: ["Sathish", "Ramesh"],
+          estimatedBudget: "$1,200 SGD",
+          highlights: ["Arrive HND & Shinjuku dinner", "Meiji Shrine & Shibuya"],
+        },
+        ctx,
+      ),
+    );
+    assert.ok(out.includes("Tokyo Autumn Discovery"));
+    assert.ok(out.includes("Tokyo, Japan"));
+    assert.ok(out.includes("Oct 15 - Oct 19, 2026"));
+    assert.ok(out.includes("calendar.google.com"));
+    assert.ok(out.includes("#2563EB"));
+  });
+});
+
+describe("flight_hotel_card", () => {
+  it("renders flight options and hotel recommendations", async () => {
+    const out = await render(
+      FlightHotelCard.render(
+        {
+          destination: "Tokyo",
+          title: "Top Flights & Hotels",
+          flights: [
+            {
+              airline: "Singapore Airlines",
+              route: "SIN → HND",
+              times: "07:10 - 15:20",
+              price: "$680 SGD",
+            },
+          ],
+          hotels: [
+            {
+              name: "Hotel Gracery Shinjuku",
+              neighborhood: "Shinjuku",
+              rating: "4.5★",
+              pricePerNight: "$160/night",
+              amenities: ["Near JR Transit"],
+            },
+          ],
+        },
+        ctx,
+      ),
+    );
+    assert.ok(out.includes("Top Flights & Hotels"));
+    assert.ok(out.includes("Singapore Airlines"));
+    assert.ok(out.includes("Hotel Gracery Shinjuku"));
+    assert.ok(out.includes("flights+to+Tokyo"));
+  });
+});
+
+describe("travel_alert_card", () => {
+  it("renders alert notifications with proper urgency styling", async () => {
+    const out = await render(
+      TravelAlertCard.render(
+        {
+          title: "Flight Check-In Open",
+          tripName: "Tokyo Trip",
+          urgency: "warning",
+          category: "checkin",
+          message: "Online check-in is now open for SQ638.",
+          actionLabel: "Check In",
+          actionUrl: "https://example.com/checkin",
+        },
+        ctx,
+      ),
+    );
+    assert.ok(out.includes("Flight Check-In Open"));
+    assert.ok(out.includes("Tokyo Trip"));
+    assert.ok(out.includes("WARNING"));
+    assert.ok(out.includes("#D97706"));
+  });
+});
+
+describe("bill_split_card", () => {
+  it("renders member shares, total amount, and settlements", async () => {
+    const out = await render(
+      BillSplitCard.render(
+        {
+          title: "Team Dinner",
+          currency: "SGD",
+          totalAmount: 145,
+          paidBy: "Ramesh",
+          splitMethod: "Equal / Itemized",
+          members: [
+            { name: "Sathish", share: 45, itemsSummary: "Veg Platter" },
+            { name: "Alice", share: 40, itemsSummary: "Vegan Bowl" },
+            { name: "Ramesh", share: 60, itemsSummary: "BBQ & Beer" },
+          ],
+          settlements: [
+            { from: "Sathish", to: "Ramesh", amount: 45 },
+            { from: "Alice", to: "Ramesh", amount: 40 },
+          ],
+        },
+        ctx,
+      ),
+    );
+    assert.ok(out.includes("Team Dinner"));
+    assert.ok(out.includes("145.00"));
+    assert.ok(out.includes("Ramesh"));
+    assert.ok(out.includes("Sathish"));
+    assert.ok(out.includes("owes"));
+  });
+});
+

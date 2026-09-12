@@ -13,6 +13,8 @@ export interface GroupMember {
   vibe: string;
 }
 
+export type RecipeType = "outing" | "travel" | "bill_split";
+
 export interface GroupOutingSettings {
   title: string;
   neighborhood: string;
@@ -21,13 +23,35 @@ export interface GroupOutingSettings {
   transitStop: string;
 }
 
+export interface GroupTravelSettings {
+  destination: string;
+  dates: string;
+  budgetTier: string;
+  hotelPreference: string;
+  flightPreference: string;
+}
+
+export interface GroupBillSplitSettings {
+  title: string;
+  totalAmount: number;
+  currency: string;
+  paidById: string;
+  splitMethod: string;
+}
+
 interface GroupContextValue {
+  activeRecipe: RecipeType;
+  setActiveRecipe: (recipe: RecipeType) => void;
   members: GroupMember[];
   settings: GroupOutingSettings;
+  travelSettings: GroupTravelSettings;
+  billSplitSettings: GroupBillSplitSettings;
   addMember: (member: Omit<GroupMember, "id" | "initials">) => void;
   updateMember: (id: string, updates: Partial<GroupMember>) => void;
   removeMember: (id: string) => void;
   updateSettings: (updates: Partial<GroupOutingSettings>) => void;
+  updateTravelSettings: (updates: Partial<GroupTravelSettings>) => void;
+  updateBillSplitSettings: (updates: Partial<GroupBillSplitSettings>) => void;
   isConfigModalOpen: boolean;
   setIsConfigModalOpen: (open: boolean) => void;
   editingMember: GroupMember | null;
@@ -74,6 +98,22 @@ const defaultSettings: GroupOutingSettings = {
   transitStop: "Tanjong Pagar / Maxwell MRT",
 };
 
+const defaultTravelSettings: GroupTravelSettings = {
+  destination: "Tokyo, Japan",
+  dates: "Oct 15 – Oct 19, 2026 (4 Days)",
+  budgetTier: "$1,200 – $1,600 SGD / person",
+  hotelPreference: "Near JR Shinjuku/Ginza, 4★, quiet & rooftop lounge",
+  flightPreference: "Direct flight from Singapore (SIN → HND/NRT), morning arrival",
+};
+
+const defaultBillSplitSettings: GroupBillSplitSettings = {
+  title: "Team Dinner & Drinks at RedDot Brewhouse",
+  totalAmount: 145,
+  currency: "SGD",
+  paidById: "m2", // Ramesh
+  splitMethod: "Itemized by Order",
+};
+
 const GroupContext = createContext<GroupContextValue | null>(null);
 
 function makeInitials(name: string): string {
@@ -85,8 +125,12 @@ function makeInitials(name: string): string {
 }
 
 export function GroupProvider({ children }: { children: React.ReactNode }) {
+  const [activeRecipe, setActiveRecipe] = useState<RecipeType>("outing");
   const [members, setMembers] = useState<GroupMember[]>(defaultMembers);
   const [settings, setSettings] = useState<GroupOutingSettings>(defaultSettings);
+  const [travelSettings, setTravelSettings] = useState<GroupTravelSettings>(defaultTravelSettings);
+  const [billSplitSettings, setBillSplitSettings] =
+    useState<GroupBillSplitSettings>(defaultBillSplitSettings);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<GroupMember | null>(null);
 
@@ -123,23 +167,48 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     setSettings((prev) => ({ ...prev, ...updates }));
   };
 
-  // Build real-time human prompt description of group constraints
-  const promptSummary = members
-    .map(
-      (m) =>
-        `${m.name} (${m.diet}${m.allergies ? `, ${m.allergies}` : ""}, budget <$${m.budget}, prefers ${m.vibe})`
-    )
-    .join("; ");
+  const updateTravelSettings = (updates: Partial<GroupTravelSettings>) => {
+    setTravelSettings((prev) => ({ ...prev, ...updates }));
+  };
+
+  const updateBillSplitSettings = (updates: Partial<GroupBillSplitSettings>) => {
+    setBillSplitSettings((prev) => ({ ...prev, ...updates }));
+  };
+
+  const payer = members.find((m) => m.id === billSplitSettings.paidById) || members[0];
+
+  // Build real-time prompt description based on active recipe
+  let promptSummary = "";
+  if (activeRecipe === "outing") {
+    promptSummary = members
+      .map(
+        (m) =>
+          `${m.name} (${m.diet}${m.allergies ? `, ${m.allergies}` : ""}, budget <$${m.budget}, prefers ${m.vibe})`
+      )
+      .join("; ");
+  } else if (activeRecipe === "travel") {
+    const travelerNames = members.map((m) => m.name.split(" ")[0]).join(", ");
+    promptSummary = `Destination: ${travelSettings.destination}, Dates: ${travelSettings.dates}, Travelers: [${travelerNames}], Budget: ${travelSettings.budgetTier}, Hotels: ${travelSettings.hotelPreference}, Flights: ${travelSettings.flightPreference}`;
+  } else {
+    const memberNames = members.map((m) => m.name).join(", ");
+    promptSummary = `Bill: "${billSplitSettings.title}", Total: ${billSplitSettings.currency} ${billSplitSettings.totalAmount}, Paid By: ${payer.name}, Split Among: [${memberNames}]`;
+  }
 
   return (
     <GroupContext.Provider
       value={{
+        activeRecipe,
+        setActiveRecipe,
         members,
         settings,
+        travelSettings,
+        billSplitSettings,
         addMember,
         updateMember,
         removeMember,
         updateSettings,
+        updateTravelSettings,
+        updateBillSplitSettings,
         isConfigModalOpen,
         setIsConfigModalOpen,
         editingMember,
@@ -159,3 +228,4 @@ export function useGroup() {
   }
   return ctx;
 }
+

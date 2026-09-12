@@ -86,3 +86,174 @@ export function buildGoogleCalendarUrl(event: CalendarEventData): string {
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+
+export function buildGoogleCalendarTripUrl(trip: {
+  title: string;
+  destination: string;
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+  travelers?: string[];
+}): string {
+  const { start, end } = formatGoogleCalendarDateTime(trip.startDate, "09:00", 24 * 60 * 3); // default 3 days
+  const attendeeList = trip.travelers?.length ? `\nTravelers: ${trip.travelers.join(", ")}` : "";
+  const fullDetails = `${trip.description || `Trip to ${trip.destination} planned with Project Roam.`}${attendeeList}`;
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: trip.title || `Trip to ${trip.destination}`,
+    dates: `${start}/${end}`,
+    details: fullDetails,
+    location: trip.destination,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+export function isGoogleCalendarConfigured(): boolean {
+  if (typeof process === "undefined" || !process.env) return false;
+  return Boolean(
+    process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN,
+  );
+}
+
+export interface DirectCalendarResult {
+  success: boolean;
+  htmlLink?: string;
+  eventId?: string;
+  fallbackUrl: string;
+  message: string;
+}
+
+/**
+ * Creates an event directly in the user's primary Google Calendar via OAuth2 v3 REST API.
+ * Gracefully falls back to 1-click URL if credentials are not present or if an error occurs.
+ */
+export async function createGoogleCalendarEventDirect(
+  event: CalendarEventData,
+): Promise<DirectCalendarResult> {
+  const fallbackUrl = buildGoogleCalendarUrl(event);
+
+  if (!isGoogleCalendarConfigured()) {
+    return {
+      success: false,
+      fallbackUrl,
+      message:
+        "Direct Google Calendar API is not configured (missing GOOGLE_REFRESH_TOKEN in .env). Provided 1-click calendar link.",
+    };
+  }
+
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID!;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN!;
+    const calendarId = process.env.GOOGLE_CALENDAR_ID || "primary";
+
+    // 1. Obtain short-lived access token from Google OAuth2
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error("Failed to refresh Google OAuth token:", errText);
+      return {
+        success: false,
+        fallbackUrl,
+        message: `Failed to authenticate with Google Calendar: ${errText}`,
+      };
+    }
+
+    const tokenData = (await tokenRes.json()) as { access_token?: string };
+    const accessToken = tokenData.access_token;
+    if (!accessToken) {
+      return {
+        success: false,
+        fallbackUrl,
+        message: "Google OAuth response did not contain an access token.",
+      };
+    }
+
+    // 2. Format RFC3339 timestamps
+    const { start, end } = formatGoogleCalendarDateTime(
+      event.date,
+      event.startTime,
+      event.durationMinutes,
+    );
+
+    // Convert to ISO 8601 string with Singapore timezone offset (+08:00)
+    // start is like YYYYMMDDTHHmmssZ
+    const toIsoWithOffset = (compact: string) => {
+      const match = compact.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+      if (!match) return new Date().toISOString();
+      return `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`;
+    };
+
+    const attendeeEmails = event.attendees
+      ?.filter((a) => a.includes("@"))
+      .map((email) => ({ email }));
+
+    const eventPayload = {
+      summary: event.title || `Dinner at ${event.venueName}`,
+      location: event.location || `${event.venueName}, Singapore`,
+      description: `${event.description || "Organized by Project Roam."}\n\nVenue: ${event.venueName}`,
+      start: {
+        dateTime: toIsoWithOffset(start),
+      },
+      end: {
+        dateTime: toIsoWithOffset(end),
+      },
+      ...(attendeeEmails && attendeeEmails.length > 0 ? { attendees: attendeeEmails } : {}),
+    };
+
+    // 3. Insert into Google Calendar v3 API
+    const calRes = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(eventPayload),
+      },
+    );
+
+    if (!calRes.ok) {
+      const errText = await calRes.text();
+      console.error("Google Calendar API insertion failed:", errText);
+      return {
+        success: false,
+        fallbackUrl,
+        message: `Google Calendar insert failed (${calRes.status}): ${errText}`,
+      };
+    }
+
+    const createdEvent = (await calRes.json()) as { id: string; htmlLink: string };
+
+    return {
+      success: true,
+      eventId: createdEvent.id,
+      htmlLink: createdEvent.htmlLink,
+      fallbackUrl: createdEvent.htmlLink || fallbackUrl,
+      message: `Successfully created Google Calendar event: "${eventPayload.summary}"!`,
+    };
+  } catch (error) {
+    console.error("Error creating Google Calendar event directly:", error);
+    return {
+      success: false,
+      fallbackUrl,
+      message: `Direct Google Calendar API error: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+

@@ -4,8 +4,8 @@ import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Roam — Multiplayer Concierge",
-  description: "Roam: AI Multiplayer Concierge with real-time group consensus arbitration & multimodal reasoning.",
+  title: "Roam — Multiplayer Multi-Recipe AI Assistant",
+  description: "Roam: Multiplayer AI Assistant for Dining, Travel Planning, and Bill Splitting with real-time group consensus arbitration.",
 };
 
 export default function RootLayout({

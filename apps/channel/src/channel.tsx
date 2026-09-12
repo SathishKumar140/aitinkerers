@@ -7,6 +7,10 @@ import {
   ItineraryCard,
   IncidentCard,
   Timeline,
+  TravelPlanCard,
+  FlightHotelCard,
+  TravelAlertCard,
+  BillSplitCard,
   welcomeMessage,
 } from "./components";
 import { createCalendarEvent, proposeAction, readThread, searchTheWeb } from "./tools";
@@ -33,14 +37,23 @@ export const channel = createChannel({
 
   agent: makeChannelAgent,
   tools,
-  components: [GroupConsensusCard, ItineraryCard, IncidentCard, Timeline],
+  components: [
+    GroupConsensusCard,
+    ItineraryCard,
+    IncidentCard,
+    Timeline,
+    TravelPlanCard,
+    FlightHotelCard,
+    TravelAlertCard,
+    BillSplitCard,
+  ],
 
   // Injected into the agent's prompt on every run.
   context: [
     {
       description: "Rendering",
       value:
-        "You can draw native UI by calling consensus_card or itinerary_card. Prefer them over prose whenever presenting recommendations or schedules.",
+        "You can draw native UI by calling consensus_card, itinerary_card, travel_plan_card, flight_hotel_card, travel_alert_card, or bill_split_card. Prefer them over prose whenever presenting recommendations, trips, schedules, or bill settlements.",
     },
     ...(isWorkplaceConfigured()
       ? [{ description: "Workplace", value: WORKPLACE_CONTEXT }]
@@ -48,10 +61,11 @@ export const channel = createChannel({
     {
       description: "Surface",
       value:
-        "This is a chat thread in a channel people are actively working in. Read the conversation carefully to pick up all group member constraints.",
+        "This is a chat thread in a channel people are actively working in. Read the conversation carefully to pick up group member constraints, travel plans, or bills.",
     },
   ],
 });
+
 
 // A mention subscribes the conversation, so the agent then follows along instead
 // of needing to be @-mentioned every single turn.
