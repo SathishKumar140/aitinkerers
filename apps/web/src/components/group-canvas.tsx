@@ -448,14 +448,18 @@ export function GroupCanvas({
                 background: showWorkplace ? "#2563eb" : "#ffffff",
                 color: showWorkplace ? "#ffffff" : "#2563eb",
                 border: "1px solid #bfdbfe",
-                padding: "3px 8px",
+                padding: "4px 10px",
                 borderRadius: "6px",
                 fontSize: "11px",
                 fontWeight: 600,
                 cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
               }}
             >
-              {showWorkplace ? "Hide Memory" : "View Memory"}
+              <span>⚙️</span>
+              <span>{showWorkplace ? "Close Settings" : "Open Settings"}</span>
             </button>
           </div>
 

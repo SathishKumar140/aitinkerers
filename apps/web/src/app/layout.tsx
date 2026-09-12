@@ -4,8 +4,8 @@ import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Incident assistant — Agents, Everywhere",
-  description: "Pick an incident, ask your assistant, and add a follow-up.",
+  title: "Roam — Multiplayer Concierge",
+  description: "Roam: AI Multiplayer Concierge with real-time group consensus arbitration & multimodal reasoning.",
 };
 
 export default function RootLayout({

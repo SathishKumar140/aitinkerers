@@ -10,14 +10,15 @@ import { GenerativeUI } from "@/components/generative-ui";
 import { AppControl } from "@/components/app-control";
 import { incidents } from "@/lib/incidents";
 import { useWorkplace } from "@/lib/use-workplace";
-import { WorkplaceFollowups } from "@/components/workplace-followups";
+import { SettingsDrawer } from "@/components/settings-drawer";
 import { GroupCanvas, type VisionResult } from "@/components/group-canvas";
 
 export default function Home() {
   const [selectedId, setSelectedId] = useState<string>(incidents[0].id);
   const workplace = useWorkplace(selectedId);
   const selectIncident = (id: string) => setSelectedId(id);
-  const [showWorkplace, setShowWorkplace] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Vision screenshot state
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
@@ -76,19 +77,24 @@ export default function Home() {
     {
       suggestions: [
         {
-          title: "Arbitrate group dinner constraints",
+          title: "🎯 Find Consensus Dinner Spot",
           message:
             "Sathish is pure vegetarian with a $20 budget, and Ramesh wants craft beer and smoked BBQ under $35. Find our best consensus dinner spot near Tanjong Pagar or Chinatown. Draw a consensus_card with scores and maps link.",
         },
         {
-          title: "Plan 3-stop evening itinerary",
+          title: "🗺️ Plan 3-Stop Evening Itinerary",
           message:
             "Plan a 3-stop Friday evening itinerary around Tanjong Pagar (Dinner, Dessert, Drinks) with walking times and draw an itinerary_card.",
         },
         {
-          title: "Suggest late night drinks & mocktails",
+          title: "🍸 Late Night Mocktails & Drinks",
           message:
             "Recommend 2 cozy cocktail spots near Chinatown with non-alcoholic craft options and good vibes for conversation.",
+        },
+        {
+          title: "📸 Scan & Arbitrate Attached Menu",
+          message:
+            "Inspect the attached menu image to verify if both Sathish (pure veg) and Ramesh (BBQ/beer) can eat comfortably, and check if prices stay within budget.",
         },
       ],
       available: "before-first-message",
@@ -119,7 +125,7 @@ export default function Home() {
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#fff",
-                fontSize: "1.1rem",
+                fontSize: "1.15rem",
                 boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
               }}
             >
@@ -127,8 +133,8 @@ export default function Home() {
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontWeight: 800, fontSize: "1.15rem", letterSpacing: "-0.025em", color: "#0f172a" }}>
-                  Project Roam
+                <span style={{ fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.03em", color: "#0f172a" }}>
+                  Roam
                 </span>
                 <span
                   style={{
@@ -150,6 +156,31 @@ export default function Home() {
                 Multiplayer Context Arbitration &amp; Multimodal Concierge
               </p>
             </div>
+
+            {/* Toggle Sidebar Button in Navbar */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: isSidebarOpen ? "#f8fafc" : "#eff6ff",
+                color: isSidebarOpen ? "#334155" : "#2563eb",
+                border: `1px solid ${isSidebarOpen ? "#cbd5e1" : "#93c5fd"}`,
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                marginLeft: "6px",
+                transition: "all 0.15s ease",
+              }}
+              title={isSidebarOpen ? "Collapse Context Sidebar" : "Expand Context Sidebar"}
+            >
+              <span style={{ fontSize: "12px" }}>{isSidebarOpen ? "◧" : "◨"}</span>
+              <span>{isSidebarOpen ? "Hide Context" : "Show Context"}</span>
+            </button>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -171,6 +202,31 @@ export default function Home() {
               <span>🇸🇬</span>
               <span>Singapore (Tanjong Pagar)</span>
             </div>
+
+            {/* Toggle Settings Sidebar Button */}
+            <button
+              type="button"
+              onClick={() => setShowSettings(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: showSettings ? "#eff6ff" : "#ffffff",
+                color: showSettings ? "#2563eb" : "#334155",
+                border: "1px solid #cbd5e1",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                transition: "all 0.15s ease",
+              }}
+              title="Open Settings & Workspace Memory Sidebar"
+            >
+              <span>⚙️</span>
+              <span>Settings</span>
+            </button>
 
             {/* Voice Mode Button */}
             <Link
@@ -206,7 +262,7 @@ export default function Home() {
         </header>
 
         {/* Dual-Pane Product Workspace */}
-        <div className="roam-layout">
+        <div className={`roam-layout ${!isSidebarOpen ? "sidebar-collapsed" : ""}`}>
           {/* Left Pane: Interactive Group Context Canvas */}
           <GroupCanvas
             attachedImage={attachedImage}
@@ -220,12 +276,25 @@ export default function Home() {
             visionError={visionError}
             onAnalyzeVision={handleAnalyzeVision}
             workplace={workplace}
-            showWorkplace={showWorkplace}
-            onToggleWorkplace={() => setShowWorkplace((prev) => !prev)}
+            showWorkplace={showSettings}
+            onToggleWorkplace={() => setShowSettings((prev) => !prev)}
           />
 
           {/* Right Pane: AI Concierge & Generative UI Feed */}
           <main className="roam-chat-panel" aria-label="AI Concierge & Chat">
+            {/* Floating Re-open Sidebar Button when collapsed */}
+            {!isSidebarOpen && (
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                className="roam-floating-expand-btn"
+                title="Expand Group Context sidebar"
+              >
+                <span>🧭</span>
+                <span>Open Group Context</span>
+              </button>
+            )}
+
             {/* Top Bar of Chat Panel */}
             <div
               style={{
@@ -257,10 +326,58 @@ export default function Home() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                {/* Image Attached Pill */}
+                {attachedImage && (
+                  <div className="roam-chat-attached-pill">
+                    <img
+                      src={attachedImage}
+                      alt="Menu thumbnail"
+                      style={{ width: "20px", height: "20px", borderRadius: "4px", objectFit: "cover" }}
+                    />
+                    <span style={{ fontSize: "11px", fontWeight: 600 }}>Flyer Attached</span>
+                    <button
+                      type="button"
+                      onClick={handleAnalyzeVision}
+                      disabled={analyzingImage}
+                      className="roam-pill-btn"
+                    >
+                      {analyzingImage ? "Analyzing…" : "⚡ Analyze"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAttachedImage(null);
+                        setVisionResult(null);
+                      }}
+                      className="roam-pill-close"
+                      title="Remove attachment"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 <span style={{ fontSize: "11px", color: "#94a3b8" }}>
-                  💡 Drag images or press <strong>Cmd+V</strong> to attach
+                  💡 Paste <strong>Cmd+V</strong> or drag menu flyers
                 </span>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(true)}
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    padding: "4px 8px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: "#475569",
+                    cursor: "pointer",
+                  }}
+                >
+                  ⚙️ Settings
+                </button>
               </div>
             </div>
 
@@ -384,48 +501,28 @@ export default function Home() {
               </div>
             )}
 
-            {/* Ambiguous Memory Drawer if opened */}
-            {showWorkplace && (
-              <div
-                style={{
-                  margin: "16px 24px 0",
-                  background: "#ffffff",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <h3 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 700, color: "#0f172a" }}>
-                    💼 Ambiguous Workspace Context &amp; Follow-ups
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowWorkplace(false)}
-                    style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "12px" }}
-                  >
-                    ✕ Close
-                  </button>
-                </div>
-                <WorkplaceFollowups incidentId={selectedId} workplace={workplace} />
-              </div>
-            )}
-
             {/* Embedded CopilotChat UI */}
             <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
               <CopilotChat
                 className="ck-chat"
                 labels={{
-                  welcomeMessageText:
-                    "Hey there! I'm Roam, your multiplayer concierge for Singapore. I have Sathish's pure veg preference (<$20) and Ramesh's BBQ & craft beer preference (<$35) pinned on the left. Tell me what vibe you're after, attach a flyer/menu, or ask for a consensus pick!",
+                  welcomeMessageText: "Where should the group go tonight?",
                   chatInputPlaceholder: "Ask Roam for consensus picks, itineraries, or drag & drop a menu…",
                 }}
               />
             </div>
           </main>
         </div>
+
+        {/* Slide-over Settings & Workspace Memory Drawer */}
+        <SettingsDrawer
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          selectedId={selectedId}
+          workplace={workplace}
+        />
       </div>
     </>
   );
 }
+
