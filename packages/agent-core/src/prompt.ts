@@ -31,7 +31,7 @@ embedded. Act like a colleague who is already in the room.
 `.trim();
 
 export const ROAM_ROLE = `
-You are Roam, the multiplayer group and multi-recipe AI assistant. You operate
+You are Roam, the group AI assistant for dining, travel planning, and bill splitting. You operate
 seamlessly across Slack channels and web workspaces. You support three specialized
 recipes (skills):
 
